@@ -1,0 +1,59 @@
+## Permissions taken from original init.rc
+/dev/syslink-proc4430   0660    media      media
+/dev/syslink-procmgr    0660    media      media
+/dev/notifyducatidrv    0660    media      media
+/dev/ipcnotify          0660    media      media
+/dev/syslink_ipc        0660    media      media
+/dev/syslink_platform   0660    media      media
+/dev/omap-rproc0        0440    media      media
+/dev/omap-rproc1        0440    media      media
+/dev/omap-rproc2        0440    media      media
+/dev/iovmm-omap0        0440    media      media
+/dev/iovmm-omap1        0440    media      media
+/dev/omap-devh0         0440    media      media
+/dev/omap-devh1         0440    media      media
+/dev/omap-devh2         0440    media      media
+/dev/pvrsrvkm           0666    system     system
+/dev/mpu                0660    system     compass
+/dev/mpuirq             0660    system     compass
+/dev/ttyO1              0660    bluetooth  bluetooth
+/dev/ttyO2              0660    system     system
+/dev/ttyspi0            0660    radio      radio
+/dev/ttyspi1            0660    radio      radio
+/dev/pts*               0660    radio      radio
+/dev/xmd-tty*           0660    radio      radio
+/dev/ttyS0              0660    radio      radio
+
+# for HWC
+/dev/dsscomp            0660    system     system
+/dev/tiler              0660    media      system
+/dev/dmm                0660    media      media
+/dev/video0             0666    media      media
+/dev/video1             0666    media      media
+/dev/video2             0666    media      media
+/dev/video3             0666    media      media
+/dev/video4             0666    media      media
+/dev/video5             0666    media      media
+/dev/uinput             0666    bluetooth  bluetooth
+/dev/input              0666    bluetooth  bluetooth
+/dev/graphics/fb0       0777    system     system
+/dev/dsscomp            0777    system     system
+/dev/omaplfb            0777    system     system
+/dev/mtc_eta_log        0777    system     system
+/dev/accelirq           0775    system     system
+/dev/timerirq           0775    system     system
+/dev/xmd-tty6           0660    system     system
+
+# bluetooth uart
+/dev/ttyS1              0660    bluetooth  bluetooth
+
+# BT
+/dev/hci_tty            0666    bluetooth  bluetooth
+/dev/rfcomm0            0600    system     system
+
+/dev/rproc_user         0660    media      media
+/dev/rpmsg-omx0         0660    media  	   media
+/dev/rpmsg-omx1         0660    media      media
+/dev/ion		0666    media      media
+/dev/tspdrv		0666    system     system
+/dev/rfkill             0660    wifi       wifi

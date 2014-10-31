@@ -1,0 +1,8 @@
+#!/system/bin/sh
+
+if [ ! -r /data/misc/wifi/wl1271-nvs.bin ]; then
+        cd /data/misc/wifi/
+        /system/bin/wifical.sh -c /system/etc/wifi/RFMD_S_3.5.ini /data/misc/wifi/wl1271-nvs.bin -m ba:dc:0f:ee:f0:da
+        /system/bin/rmmod wl12xx_sdio
+	/system/bin/wifimac
+fi

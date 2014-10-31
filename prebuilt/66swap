@@ -1,0 +1,5 @@
+#!/system/bin/sh
+mkswap /dev/block/mmcblk0p15
+swapon /dev/block/mmcblk0p15
+mkswap /dev/block/mmcblk0p9
+swapon /dev/block/mmcblk0p9

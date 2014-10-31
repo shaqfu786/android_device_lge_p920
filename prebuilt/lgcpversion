@@ -1,0 +1,7 @@
+#!/system/bin/sh
+
+## WTF?
+## D/RILC    (  148): [0005]< BASEBAND_VERSION fails by E_GENERIC_FAILURE
+
+
+setprop gsm.version.baseband `strings /dev/block/platform/omap/omap_hsmmc.1/by-name/nv2 | grep -- -V | tail -1`

@@ -1,0 +1,48 @@
+#
+# system.prop for p920
+#
+
+## Enable OMAP stuffs
+com.ti.omap_enhancement=true
+
+## Wifi interface name
+wifi.interface=wlan0
+
+# hold precise GC data, and use SMP
+dalvik.vm.dexopt-flags=m=y,u=n
+
+ro.sf.lcd_density=240
+
+## Radio stuffs
+ro.telephony.call_ring.multiple=false
+ro.telephony.call_ring.delay=3000
+ro.telephony.call_ring.absent=true
+rild.libpath=/system/lib/lge-ril.so
+mobiledata.interfaces=rmnet0
+ro.telephony.ril_class=LGEInfineon
+
+ro.opengles.version=131072
+dalvik.vm.dexopt-data-only=1
+
+ro.com.google.clientidbase=android-lge
+ro.com.google.clientidbase.ms=android-lge
+ro.com.google.clientidbase.gmm=android-lge
+ro.com.google.clientidbase.yt=android-lge
+ro.com.google.clientidbase.am=android-lge
+
+## Config the microphones
+omap.audio.mic.main=AMic0
+omap.audio.mic.sub=AMic1
+omap.audio.power=PingPong
+
+# fix graphics rotation glitches
+ro.bq.gpu_to_cpu_unsupported=1
+
+## CM toggle for TI Hotspot
+wifi.hotspot.ti=true
+
+persist.sys.usb.config=mtp,adb
+
+## Limit activities
+sys.mem.max_hidden_apps=5
+
