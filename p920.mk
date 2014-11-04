@@ -85,7 +85,10 @@ PRODUCT_PACKAGES += \
     wlan_cu \
     tiap_loader \
     tiap_cu \
+    audio_policy.omap4 \
+    libasound \
     libaudioutils \
+    libaudiohw_legacy
     audio.a2dp.default \
     audio_policy.default
 
