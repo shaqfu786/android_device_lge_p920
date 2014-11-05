@@ -10,6 +10,7 @@ wifi.interface=wlan0
 
 # hold precise GC data, and use SMP
 dalvik.vm.dexopt-flags=m=y,u=n
+dalvik.vm.dexopt-data-only=1
 
 ro.sf.lcd_density=240
 
@@ -20,6 +21,7 @@ ro.telephony.call_ring.absent=true
 rild.libpath=/system/lib/lge-ril.so
 mobiledata.interfaces=rmnet0
 ro.telephony.ril_class=LGEInfineon
+persist.radio.rr.enable=1
 
 ro.opengles.version=131072
 dalvik.vm.dexopt-data-only=1
@@ -37,6 +39,9 @@ omap.audio.power=PingPong
 
 # fix graphics rotation glitches
 ro.bq.gpu_to_cpu_unsupported=1
+
+# SGX540 is slower with the scissor optimization enabled
+ro.hwui.disable_scissor_opt=true
 
 ## CM toggle for TI Hotspot
 wifi.hotspot.ti=true
