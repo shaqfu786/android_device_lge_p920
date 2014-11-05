@@ -1,4 +1,5 @@
-# inherit from the proprietary version
+# Hardware
+BOARD_HARDWARE_CLASS := device/samsung/tuna/cmhw# inherit from the proprietary version
 -include vendor/lge/p920/BoardConfigVendor.mk
 
 TARGET_NO_BOOTLOADER := true
@@ -139,6 +140,8 @@ BOARD_HAS_VIBRATOR_IMPLEMENTATION := ../../device/lge/p920/vibrator.c
 BOARD_ALLOW_SUSPEND_IN_CHARGER := true
 ADDITIONAL_DEFAULT_PROPERTIES += ro.secure=0
 TARGET_RELEASETOOLS_EXTENSIONS = device/lge/p920/releasetools.py
+# Hardware
+BOARD_HARDWARE_CLASS := device/lge/p920/cmhw
 
 
 
