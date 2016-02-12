@@ -1,0 +1,15 @@
+# Vibrator
+/dev/tspdrv                      u:object_r:input_device:s0
+
+# for wpa_supp
+/dev/rfkill                      u:object_r:rfkill_device:s0
+
+#The devices and files used by the hciattach service are device specific
+/dev/ttyO1                       u:object_r:hci_attach_dev:s0
+
+# ttyO0 is for uart driver. gps_device is device specific
+/dev/ttyO0                       u:object_r:gps_device:s0
+
+# Firmwares
+/system/vendor/firmware/ducati-m3.bin u:object_r:firmware_ducati:s0
+/system/etc/firmware/ti-connectivity/wl1271-nvs.bin u:object_r:radio_data_file:s0
