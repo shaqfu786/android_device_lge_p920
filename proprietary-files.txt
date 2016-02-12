@@ -1,56 +1,91 @@
-etc/cert/lge.cer
-lib/libril.so
-lib/hw/audio.primary.omap4.so
-lib/hw/lights.omap4.so
-lib/hw/gps.omap4.so
-lib/hw/sensors.omap4.so
-lib/hw/camera.omap4.so
-lib/libini.so
-lib/liblgehdmi.so
-lib/libhdcp.so
-lib/libmpl.so
-lib/libmllite.so
-lib/libmlplatform.so
-lib/lge-ril.so
-lib/libtinyalsa.so
-vendor/bin/pvrsrvinit
-vendor/bin/pvrsrvinit_SGX540_120
-vendor/firmware/ducati-m3.bin
-vendor/lib/drm/libdrmwvmplugin.so
-vendor/lib/libPVRScopeServices_SGX540_120.so
-vendor/lib/liblvverx.so
-vendor/lib/libIMGegl_SGX540_120.so
-vendor/lib/libwvm.so
-vendor/lib/libsrv_init_SGX540_120.so
-vendor/lib/libpvrANDROID_WSEGL_SGX540_120.so
-vendor/lib/libglslcompiler_SGX540_120.so
-vendor/lib/libwvdrm_L3.so
-vendor/lib/hw/hwcomposer.omap4.so
-vendor/lib/hw/gralloc.omap4.so
-vendor/lib/libpvr2d_SGX540_120.so
-vendor/lib/libWVStreamControlAPI_L3.so
-vendor/lib/liblvvetx.so
-vendor/lib/libsrv_um_SGX540_120.so
-vendor/lib/libusc_SGX540_120.so
-vendor/lib/egl/libGLESv2_POWERVR_SGX540_120.so
-vendor/lib/egl/libEGL_POWERVR_SGX540_120.so
-vendor/lib/egl/libGLESv1_CM_POWERVR_SGX540_120.so
-bin/glgps
-bin/rild
+# Proprietary files for lge p920
+# Wifi & SoftAP
 etc/firmware/ti-connectivity/wl127x-fw-4-sr.bin
 etc/firmware/ti-connectivity/wl127x-fw-4-plt.bin
 etc/firmware/ti-connectivity/wl1271-nvs.bin
 etc/firmware/ti-connectivity/wl127x-fw-4-mr.bin
-## TEMPORARY - we need kernel source to pull the ion/rpmsg headers and
-## build media :(
-lib/libmm_osal.so
-lib/libOMX_Core.so
-lib/libion.so
-lib/libtiutils.so
-lib/libdomx.so
-lib/libOMX.TI.DUCATI1.MISC.SAMPLE.so
-lib/libOMX.TI.DUCATI1.VIDEO.CAMERA.so
-lib/libOMX.TI.DUCATI1.VIDEO.DECODER.so
-lib/libOMX.TI.DUCATI1.VIDEO.H264E.so
-lib/libOMX.TI.DUCATI1.VIDEO.MPEG4E.so
-lib/libOMX.TI.DUCATI1.VIDEO.DECODER.secure.so
+etc/wifi/firmware.bin
+etc/wifi/softap/firmware_ap.bin
+
+# Bluetooth & FM-Radio
+etc/firmware/fm_rx_init_1273.2.bts
+etc/firmware/TIInit_7.2.31.bts
+etc/firmware/fmc_init_1273.2.bts
+etc/firmware/fm_tx_init_1273.2.bts
+
+# Ducati
+vendor/firmware/ducati-m3.512MB.bin
+
+# SGX-Pvr
+etc/powervr.ini
+vendor/bin/pvrsrvctl_SGX540_120
+vendor/bin/pvrsrvctl_SGX544_112
+vendor/bin/pvrsrvinit
+vendor/lib/egl/libEGL_POWERVR_SGX540_120.so
+vendor/lib/egl/libEGL_POWERVR_SGX544_112.so
+vendor/lib/egl/libGLESv1_CM_POWERVR_SGX540_120.so
+vendor/lib/egl/libGLESv1_CM_POWERVR_SGX544_112.so
+vendor/lib/egl/libGLESv2_POWERVR_SGX540_120.so
+vendor/lib/egl/libGLESv2_POWERVR_SGX544_112.so
+vendor/lib/hw/gralloc.omap4430.so
+vendor/lib/hw/gralloc.omap4460.so
+vendor/lib/hw/gralloc.omap4470.so
+vendor/lib/libIMGegl_SGX540_120.so
+vendor/lib/libIMGegl_SGX544_112.so
+vendor/lib/libPVRScopeServices_SGX540_120.so
+vendor/lib/libPVRScopeServices_SGX544_112.so
+vendor/lib/libglslcompiler_SGX540_120.so
+vendor/lib/libglslcompiler_SGX544_112.so
+vendor/lib/libpvr2d_SGX540_120.so
+vendor/lib/libpvr2d_SGX544_112.so
+vendor/lib/libpvrANDROID_WSEGL_SGX540_120.so
+vendor/lib/libpvrANDROID_WSEGL_SGX544_112.so
+vendor/lib/libsrv_init_SGX540_120.so
+vendor/lib/libsrv_init_SGX544_112.so
+vendor/lib/libsrv_um_SGX540_120.so
+vendor/lib/libsrv_um_SGX544_112.so
+vendor/lib/libusc_SGX540_120.so
+vendor/lib/libusc_SGX544_112.so
+
+# Widevine
+lib/libdrmdecrypt.so
+vendor/lib/libwvm.so
+vendor/lib/libwvdrm_L3.so
+vendor/lib/libWVStreamControlAPI_L3.so
+vendor/lib/drm/libdrmwvmplugin.so
+vendor/lib/mediadrm/libwvdrmengine.so
+
+# Audio
+lib/libacousticengine.so
+lib/libaudiomodemgeneric.so
+lib/libmmclient.so
+
+# Sensors
+lib/libmpl.so
+lib/libmllite.so
+lib/libmlplatform.so
+
+# Hals
+lib/hw/lights.omap4.so
+lib/hw/gps.omap4.so
+lib/hw/sensors.omap4.so
+
+# Gps
+bin/glgps
+etc/cert/lge.cer
+lib/hw/gps.omap4.so
+
+# Ril
+bin/rild
+lib/libril.so
+lib/libini.so
+lib/lge-ril.so
+
+# Hdmi
+lib/liblgehdmi.so
+lib/libhdcp.so
+
+# Other
+vendor/lib/liblvverx.so
+vendor/lib/liblvvetx.so
+vendor/lib/libsmapi.so
