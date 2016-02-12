@@ -3,17 +3,183 @@ import init.storage.rc
 import init.wifi.bt.rc
 
 on init
-# Preload libjhead for camera
-    export LD_PRELOAD /system/lib/libjhead.so
+    sysclktz 0
+ 
+    loglevel 3
 
-on post-fs-data
+    wait /dev/block/mmcblk0p2
+
+    mkdir /system
+    mkdir /data 0771 system system
+    mkdir /cache 0771 system cache
+    mkdir /config 0500 root root
     mkdir /misc 0771 system misc
     mkdir /lgdrm 0770 system system
+
+on fs
+# pvr module
+     insmod /system/lib/modules/pvrsrvkm_sgx540_120.ko
+     insmod /system/lib/modules/omaplfb_sgx540_120.ko
+     start pvrsrvinit 
+
+# KSM
+     write /sys/kernel/mm/ksm/pages_to_scan 100
+     write /sys/kernel/mm/ksm/sleep_millisecs 500
+     write /sys/kernel/mm/ksm/run 1
+
+on post-fs
+    mount ext4 /dev/block/mmcblk0p7 /system ro noatime barrier=1 wait
+    mount ext4 /dev/block/mmcblk0p8 /data nosuid nodev noatime barrier=1 wait
+    chown system system /data
+    chmod 0771 /data
+    mount ext4 /dev/block/mmcblk0p10 /cache nosuid nodev noatime barrier=1
+    chown system cache /cache
+    chmod 0770 /cache
+
+    mount rootfs rootfs / ro remount
+    symlink /dev/ttyGS0 /dev/acm0
+
+# We chown/chmod /data again so because mount is run as root + defaults
+    chown system system /data
+    chmod 0771 /data
+
+# Create mountpoints and mount tmpfs
+    mkdir /misc 0770 system misc
+    mkdir /sd-ext 0771 system system
+    symlink /data/tmp /tmp
+    mount tmpfs tmpfs /tmp
+
+# Same reason as /data above
+    chown system cache /cache
+    chmod 0771 /cache
+    chown system misc /misc
+    chmod 0770 /misc
+
+# This may have been created by the recovery system with odd permissions
+    chown system cache /cache/recovery
+    chmod 0770 /cache/recovery
+
+# change permissions on vmallocinfo so we can grab it from bugreports
+    chown root log /proc/vmallocinfo
+    chmod 0440 /proc/vmallocinfo
+
+# change permissions on kmsg & sysrq-trigger so bugreports can grab kthread stacks
+    chown root system /proc/kmsg
+    chmod 0440 /proc/kmsg
+    chown root system /proc/sysrq-trigger
+    chmod 0220 /proc/sysrq-trigger
+
+# create basic filesystem structure
+    mkdir /data/misc 01771 system misc
+    mkdir /data/misc/bluetoothd 0770 bluetooth bluetooth
+    mkdir /data/misc/bluetooth 0770 system system
+    mkdir /data/misc/keystore 0700 keystore keystore
+    mkdir /data/misc/vpn 0770 system system
+    mkdir /data/misc/systemkeys 0700 system system
+    mkdir /data/misc/vpn/profiles 0770 system system
+
+    restorecon /system/etc/firmware/ducati-m3.512MB.bin
+# Install kernel modules
+# Install product specific kernel modules
+    exec /system/bin/load_modules.sh
+
+# Set enable_smp if BT LE is supported
+    write /sys/module/bluetooth/parameters/enable_smp 1
+
+    mkdir /cache/download 0771 system cache
+
+# create dalvik-cache and double-check the perms
+    mkdir /data/dalvik-cache 0771 system system
+    chown system system /data/dalvik-cache
+    chmod 0771 /data/dalvik-cache
+
+    mkdir /cache/dalvik-cache 0771 system system
+    chown system system /cache/dalvik-cache
+    chmod 0771 /cache/dalvik-cache
+
+    # create the lost+found directories, so as to enforce our permissions
+    mkdir /data/lost+found 0770
+    mkdir /cache/lost+found 0770
+
+    # double check the perms, in case lost+found already exists, and set owner
+    chown root root /data/lost+found
+    chmod 0770 /data/lost+found
+    chown root root /cache/lost+found
+    chmod 0770 /cache/lost+found  
+
+on post-fs-data
+
+    mkdir /misc 0771 system misc
+    mkdir /lgdrm 0770 system system
+
+    chown root system /data/dontpanic
+    chmod 0775 /data/dontpanic
 
     mkdir /sqlite_stmt_journals 01777 root root
     mount tmpfs tmpfs /sqlite_stmt_journals size=4m
 
-    # change permissions for alsa nodes
+# Create Directories for WiFi
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wifi/firmware 0770 wifi wifi
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+
+# audio file access
+    mkdir /data/audio 0770 media audio
+    chown media audio /data/audio
+    chmod 0770 /data/audio
+
+# gps permissions
+# GPS UART Setting
+    chown system system /dev/ttyO2
+    chmod 0777 /dev/ttyO2
+# GPS RIL port Setting
+    chown system system /dev/pts17
+    chmod 0777 /dev/pts17
+    chmod 777 /system/bin/glgps
+
+    mkdir /data/gps
+    chmod 777 /data/gps
+    chown gps system /data/gps
+    mkdir /data/gps/log
+    chmod 777 /data/gps/log
+    chown system system /data/gps/log
+    chmod 777 /system/bin/lto
+    chown root root /system/bin/lto
+
+    mkdir /data/cache
+    chmod 770 /data/cache
+    chown system system /data/cache
+
+# This may have been created by the recovery system with odd permissions
+    chown system cache /cache/recovery
+    chmod 0770 /cache/recovery
+
+#   chown root /system/bin/glgps
+    chown system system /system/bin/glgps
+    chown system system /system/etc/gps_brcm_conf.xml
+    chown system system /system/etc/cert/
+    chown system system /system/etc/cert/lge.cer
+
+# Create dump dir and collect dumps.
+    mkdir /data/dontpanic
+    chown root system /data/dontpanic
+    chmod 0754 /data/dontpanic
+
+# collect ramconsole data
+    copy /proc/last_kmsg /data/dontpanic/last_kmsg.txt
+    chown root log /data/dontpanic/last_kmsg.txt
+    chmod 0640 /data/dontpanic/last_kmsg.txt
+
+# collect apanic data, free resources and re-arm trigger
+    copy /proc/apanic_console /data/dontpanic/apanic_console
+    chown root log /data/dontpanic/apanic_console
+    chmod 0640 /data/dontpanic/apanic_console
+    copy /proc/apanic_threads /data/dontpanic/apanic_threads
+    chown root log /data/dontpanic/apanic_threads
+    chmod 0640 /data/dontpanic/apanic_threads
+
+# change permissions for alsa nodes
     symlink /dev/snd/pcmC0D0c /dev/pcmC0D0c
     symlink /dev/snd/pcmC0D0p /dev/pcmC0D0p
     symlink /dev/snd/controlC0 /dev/controlC0
@@ -23,7 +189,7 @@ on post-fs-data
     chmod 0777 /dev/controlC0
     chmod 0777 /dev/timer
 
-	# Log Service
+# Log Service
     mkdir /data/logger 0775 system system
     chown system system /data/logger
     chmod 0771 /data/logger
@@ -134,7 +300,7 @@ on post-fs-data
 
     chown system system /sys/devices/platform/omapdss/display0/sgx_manual_recovery
     chmod 0775 /sys/devices/platform/omapdss/display0/sgx_manual_recovery
-    # change permissions for overlay managers and display devices
+# change permissions for overlay managers and display devices
     chmod 0775 /sys/devices/platform/omapdss/display0/enabled
     chmod 0775 /sys/devices/platform/omapdss/display1/enabled
     chmod 0775 /sys/devices/platform/omapdss/display2/enabled
@@ -175,7 +341,7 @@ on post-fs-data
     chmod 0775 /sys/devices/platform/omapdss/overlay1/color_mode
     chmod 0775 /sys/devices/platform/omapdss/overlay2/color_mode
     chmod 0775 /sys/devices/platform/omapdss/overlay3/color_mode
-    # change permissions for manager tranparency parameters
+# change permissions for manager tranparency parameters
     chmod 0775 /sys/devices/platform/omapdss/manager0/name
     chmod 0775 /sys/devices/platform/omapdss/manager0/display
     chmod 0775 /sys/devices/platform/omapdss/manager0/trans_key_value
@@ -195,21 +361,21 @@ on post-fs-data
     chmod 0775 /sys/devices/platform/omapdss/overlay1/enabled
     chmod 0775 /sys/devices/platform/omapdss/overlay2/enabled
     chmod 0775 /sys/devices/platform/omapdss/overlay3/enabled
-    # change permissions for display timings to get the resolutions
+# change permissions for display timings to get the resolutions
     chmod 0775 /sys/devices/platform/omapdss/display0/timings
     chmod 0775 /sys/devices/platform/omapdss/display1/timings
     chmod 0775 /sys/devices/platform/omapdss/display2/timings
     chmod 0775 /sys/devices/platform/omapdss/display3/timings
-    #change framebuffer permission
+# change framebuffer permission
     chmod 0775 /sys/devices/platform/omapfb/graphics/fb0/overlays
     chmod 0775 /sys/devices/platform/omapfb/graphics/fb0/overlays_rotate
     chmod 0775 /sys/devices/platform/omapfb/graphics/fb1/overlays
     chmod 0775 /sys/devices/platform/omapfb/graphics/fb1/overlays_rotate
-    #change permissions for LCD backlightness
+# change permissions for LCD backlightness
     chmod 0664 /sys/devices/platform/i2c_omap.2/i2c-2/2-0036/brightness
-    #AT command AT%LEDON
+# AT command AT%LEDON
     chmod 0664 /sys/devices/platform/keypad_led/leds/keyboard-backlight/brightness
-    #AT command AT%GKPD
+# AT command AT%GKPD
     chmod 0664 /sys/devices/platform/omap-keypad/key_test_mode
 
     chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/flash
@@ -217,7 +383,7 @@ on post-fs-data
     chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/torch
     chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/enable
 
-#LGE_KERNEL_MUX START  jongho3.lee@lge.com
+# LGE_KERNEL_MUX START  jongho3.lee@lge.com
     chown root  radio /sys/class/power_supply/battery/gauge_control
     chown root  radio /sys/class/power_supply/battery/voltage_now
 
@@ -244,79 +410,78 @@ on post-fs-data
     chmod 0775 /sys/devices/platform/omapdss/display1/custom_edid_timing
     chmod 0775 /sys/devices/platform/omapdss/display1/hpd_enabled
 
- #HDMI device
+# HDMI device
+   chown system system /sys/devices/platform/omapdss/overlay0/req_enabled
+   chown system system /sys/devices/platform/omapdss/overlay0/req_rotation
+   chown system system /sys/devices/platform/omapdss/overlay0/req_position
+   chown system system /sys/devices/platform/omapdss/overlay0/req_out_size
+   chown system system /sys/devices/platform/omapdss/overlay0/req_manager
+   chown system system /sys/devices/platform/omapdss/overlay0/req_request
+   chown system system /sys/devices/platform/omapdss/overlay0/req_global_alpha
+   chown system system /sys/devices/platform/omapdss/overlay0/req_zorder
 
- chown system system /sys/devices/platform/omapdss/overlay0/req_enabled
- chown system system /sys/devices/platform/omapdss/overlay0/req_rotation
- chown system system /sys/devices/platform/omapdss/overlay0/req_position
- chown system system /sys/devices/platform/omapdss/overlay0/req_out_size
- chown system system /sys/devices/platform/omapdss/overlay0/req_manager
- chown system system /sys/devices/platform/omapdss/overlay0/req_request
- chown system system /sys/devices/platform/omapdss/overlay0/req_global_alpha
- chown system system /sys/devices/platform/omapdss/overlay0/req_zorder
+   chmod 0775 /sys/devices/platform/omapdss/overlay0/req_enabled
+   chmod 0775 /sys/devices/platform/omapdss/overlay0/req_rotation
+   chmod 0775 /sys/devices/platform/omapdss/overlay0/req_position
+   chmod 0775 /sys/devices/platform/omapdss/overlay0/req_out_size
+   chmod 0775 /sys/devices/platform/omapdss/overlay0/req_manager
+   chmod 0775 /sys/devices/platform/omapdss/overlay0/req_request
+   chmod 0775 /sys/devices/platform/omapdss/overlay0/req_global_alpha
+   chmod 0775 /sys/devices/platform/omapdss/overlay0/req_zorder
 
- chmod 0775 /sys/devices/platform/omapdss/overlay0/req_enabled
- chmod 0775 /sys/devices/platform/omapdss/overlay0/req_rotation
- chmod 0775 /sys/devices/platform/omapdss/overlay0/req_position
- chmod 0775 /sys/devices/platform/omapdss/overlay0/req_out_size
- chmod 0775 /sys/devices/platform/omapdss/overlay0/req_manager
- chmod 0775 /sys/devices/platform/omapdss/overlay0/req_request
- chmod 0775 /sys/devices/platform/omapdss/overlay0/req_global_alpha
- chmod 0775 /sys/devices/platform/omapdss/overlay0/req_zorder
+   chown system system /sys/devices/platform/omapdss/overlay1/req_enabled
+   chown system system /sys/devices/platform/omapdss/overlay1/req_rotation
+   chown system system /sys/devices/platform/omapdss/overlay1/req_position
+   chown system system /sys/devices/platform/omapdss/overlay1/req_out_size
+   chown system system /sys/devices/platform/omapdss/overlay1/req_manager
+   chown system system /sys/devices/platform/omapdss/overlay1/req_request
+   chown system system /sys/devices/platform/omapdss/overlay1/req_global_alpha
+   chown system system /sys/devices/platform/omapdss/overlay1/req_zorder
 
- chown system system /sys/devices/platform/omapdss/overlay1/req_enabled
- chown system system /sys/devices/platform/omapdss/overlay1/req_rotation
- chown system system /sys/devices/platform/omapdss/overlay1/req_position
- chown system system /sys/devices/platform/omapdss/overlay1/req_out_size
- chown system system /sys/devices/platform/omapdss/overlay1/req_manager
- chown system system /sys/devices/platform/omapdss/overlay1/req_request
- chown system system /sys/devices/platform/omapdss/overlay1/req_global_alpha
- chown system system /sys/devices/platform/omapdss/overlay1/req_zorder
+   chmod 0775 /sys/devices/platform/omapdss/overlay1/req_enabled
+   chmod 0775 /sys/devices/platform/omapdss/overlay1/req_rotation
+   chmod 0775 /sys/devices/platform/omapdss/overlay1/req_position
+   chmod 0775 /sys/devices/platform/omapdss/overlay1/req_out_size
+   chmod 0775 /sys/devices/platform/omapdss/overlay1/req_manager
+   chmod 0775 /sys/devices/platform/omapdss/overlay1/req_request
+   chmod 0775 /sys/devices/platform/omapdss/overlay1/req_global_alpha
+   chmod 0775 /sys/devices/platform/omapdss/overlay1/req_zorder
 
- chmod 0775 /sys/devices/platform/omapdss/overlay1/req_enabled
- chmod 0775 /sys/devices/platform/omapdss/overlay1/req_rotation
- chmod 0775 /sys/devices/platform/omapdss/overlay1/req_position
- chmod 0775 /sys/devices/platform/omapdss/overlay1/req_out_size
- chmod 0775 /sys/devices/platform/omapdss/overlay1/req_manager
- chmod 0775 /sys/devices/platform/omapdss/overlay1/req_request
- chmod 0775 /sys/devices/platform/omapdss/overlay1/req_global_alpha
- chmod 0775 /sys/devices/platform/omapdss/overlay1/req_zorder
+   chown system system /sys/devices/platform/omapdss/overlay2/req_enabled
+   chown system system /sys/devices/platform/omapdss/overlay2/req_rotation
+   chown system system /sys/devices/platform/omapdss/overlay2/req_position
+   chown system system /sys/devices/platform/omapdss/overlay2/req_out_size
+   chown system system /sys/devices/platform/omapdss/overlay2/req_manager
+   chown system system /sys/devices/platform/omapdss/overlay2/req_request
+   chown system system /sys/devices/platform/omapdss/overlay2/req_global_alpha
+   chown system system /sys/devices/platform/omapdss/overlay2/req_zorder
 
- chown system system /sys/devices/platform/omapdss/overlay2/req_enabled
- chown system system /sys/devices/platform/omapdss/overlay2/req_rotation
- chown system system /sys/devices/platform/omapdss/overlay2/req_position
- chown system system /sys/devices/platform/omapdss/overlay2/req_out_size
- chown system system /sys/devices/platform/omapdss/overlay2/req_manager
- chown system system /sys/devices/platform/omapdss/overlay2/req_request
- chown system system /sys/devices/platform/omapdss/overlay2/req_global_alpha
- chown system system /sys/devices/platform/omapdss/overlay2/req_zorder
+   chmod 0775 /sys/devices/platform/omapdss/overlay2/req_enabled
+   chmod 0775 /sys/devices/platform/omapdss/overlay2/req_rotation
+   chmod 0775 /sys/devices/platform/omapdss/overlay2/req_position
+   chmod 0775 /sys/devices/platform/omapdss/overlay2/req_out_size
+   chmod 0775 /sys/devices/platform/omapdss/overlay2/req_manager
+   chmod 0775 /sys/devices/platform/omapdss/overlay2/req_request
+   chmod 0775 /sys/devices/platform/omapdss/overlay2/req_global_alpha
+   chmod 0775 /sys/devices/platform/omapdss/overlay2/req_zorder
 
- chmod 0775 /sys/devices/platform/omapdss/overlay2/req_enabled
- chmod 0775 /sys/devices/platform/omapdss/overlay2/req_rotation
- chmod 0775 /sys/devices/platform/omapdss/overlay2/req_position
- chmod 0775 /sys/devices/platform/omapdss/overlay2/req_out_size
- chmod 0775 /sys/devices/platform/omapdss/overlay2/req_manager
- chmod 0775 /sys/devices/platform/omapdss/overlay2/req_request
- chmod 0775 /sys/devices/platform/omapdss/overlay2/req_global_alpha
- chmod 0775 /sys/devices/platform/omapdss/overlay2/req_zorder
+   chown system system /sys/devices/platform/omapdss/overlay3/req_enabled
+   chown system system /sys/devices/platform/omapdss/overlay3/req_rotation
+   chown system system /sys/devices/platform/omapdss/overlay3/req_position
+   chown system system /sys/devices/platform/omapdss/overlay3/req_out_size
+   chown system system /sys/devices/platform/omapdss/overlay3/req_manager
+   chown system system /sys/devices/platform/omapdss/overlay3/req_request
+   chown system system /sys/devices/platform/omapdss/overlay3/req_global_alpha
+   chown system system /sys/devices/platform/omapdss/overlay3/req_zorder
 
- chown system system /sys/devices/platform/omapdss/overlay3/req_enabled
- chown system system /sys/devices/platform/omapdss/overlay3/req_rotation
- chown system system /sys/devices/platform/omapdss/overlay3/req_position
- chown system system /sys/devices/platform/omapdss/overlay3/req_out_size
- chown system system /sys/devices/platform/omapdss/overlay3/req_manager
- chown system system /sys/devices/platform/omapdss/overlay3/req_request
- chown system system /sys/devices/platform/omapdss/overlay3/req_global_alpha
- chown system system /sys/devices/platform/omapdss/overlay3/req_zorder
-
- chmod 0775 /sys/devices/platform/omapdss/overlay3/req_enabled
- chmod 0775 /sys/devices/platform/omapdss/overlay3/req_rotation
- chmod 0775 /sys/devices/platform/omapdss/overlay3/req_position
- chmod 0775 /sys/devices/platform/omapdss/overlay3/req_out_size
- chmod 0775 /sys/devices/platform/omapdss/overlay3/req_manager
- chmod 0775 /sys/devices/platform/omapdss/overlay3/req_request
- chmod 0775 /sys/devices/platform/omapdss/overlay3/req_global_alpha
- chmod 0775 /sys/devices/platform/omapdss/overlay3/req_zorder
+   chmod 0775 /sys/devices/platform/omapdss/overlay3/req_enabled
+   chmod 0775 /sys/devices/platform/omapdss/overlay3/req_rotation
+   chmod 0775 /sys/devices/platform/omapdss/overlay3/req_position
+   chmod 0775 /sys/devices/platform/omapdss/overlay3/req_out_size
+   chmod 0775 /sys/devices/platform/omapdss/overlay3/req_manager
+   chmod 0775 /sys/devices/platform/omapdss/overlay3/req_request
+   chmod 0775 /sys/devices/platform/omapdss/overlay3/req_global_alpha
+   chmod 0775 /sys/devices/platform/omapdss/overlay3/req_zorder
 
 # Enable hotplug detection for HDMI
     write /sys/devices/platform/omapdss/display1/hpd_enabled 1
@@ -335,49 +500,42 @@ on post-fs-data
     write /proc/sys/net/ipv6/conf/rmnet0/disable_ipv6 1
     write /proc/sys/net/ipv6/conf/rment1/disable_ipv6 1
     write /proc/sys/net/ipv6/conf/rmnet2/disable_ipv6 1
-#LGE_CHANGE_E 20120720, hwansuk.kang@lge.com [data] Disable IPv6 for mobile network
+# LGE_CHANGE_E 20120720, hwansuk.kang@lge.com [data] Disable IPv6 for mobile network
 
 
 ### END OF LGE STUFFS
 
-    # flashlight
+# flashlight
     chown system camera /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/torch
-    chmod 0660          /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/torch
+    chmod 0660 /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/torch
 
 # Allow everybody to read the xt_qtaguid resource tracking misc dev.
 # This is needed by any process that uses socket tagging.
     chmod 0644 /dev/xt_qtaguid
 
-#LGE_CHANGE_S [taehwan.kim@lge.com] 2010-05-04, 27.8.2 patch., 27.10.1 patch
-# power management
-    # mount debugfs
-    mkdir /debug
-    mount debugfs debugfs /debug
-
-    # switch CPUfreq from performance to ondemand & tune it
+# LGE_CHANGE_S [taehwan.kim@lge.com] 2010-05-04, 27.8.2 patch., 27.10.1 patch
+# switch CPUfreq from performance to ondemand & tune it
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ondemand
     write /sys/devices/system/cpu/cpufreq/ondemand/up_threshold 70
 
-    # Enabling write by applications such as Web Browser for Performance Boost
+# Enabling write by applications such as Web Browser for Performance Boost
     chmod 0664 /sys/devices/system/cpu/cpu1/online
     chmod 0664 /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-    # Enable Smart Reflex in debugfs
+# Enable Smart Reflex in debugfs
     write /debug/pm_debug/smartreflex/sr_core/autocomp 1
     write /debug/pm_debug/smartreflex/sr_iva/autocomp 1
     write /debug/pm_debug/smartreflex/sr_mpu/autocomp 1
 
-    # Enable off mode by default
+# Enable off mode by default
     write /debug/pm_debug/enable_off_mode 1
-#LGE_CHANGE_E [kibum.lee@lge.com] 2010-12-09, 27.8.2 patch, 27.10.1 patch
+# LGE_CHANGE_E [kibum.lee@lge.com] 2010-12-09, 27.8.2 patch, 27.10.1 patch
 
-chown radio radio /dev/block/mmcblk0p2
+    chown radio radio /dev/block/mmcblk0p2
     chown radio radio /dev/block/mmcblk0p3
     chmod 0660 /dev/block/mmcblk0p2
     chmod 0660 /dev/block/mmcblk0p3
 
-
-
-
+# Set indication (checked by vold) that we have finished this action
     setprop vold.post_fs_data_done 1
 
     chown system system /sys/class/android_usb/android0/f_mass_storage/lun/file
@@ -385,28 +543,41 @@ chown radio radio /dev/block/mmcblk0p2
     chown system system /sys/class/android_usb/android0/f_rndis/ethaddr
     chmod 0660 /sys/class/android_usb/android0/f_rndis/ethaddr
 	
-	#By default, the Linux kernel swaps in 8 pages of memory at a time. When using ZRAM, the incremental cost of reading 1 page at a time is negligible and may help in case the device is under extreme memory pressure.
-	write /proc/sys/vm/page-cluster 0
-
-	# Flash storage isn't a good entropy source, and only causes locking
-    # overhead in the kernel. Turn it off.
-    write /sys/block/mmcblk0/queue/add_random 0
-    write /sys/block/mmcblk1/queue/add_random 0
+# By default, the Linux kernel swaps in 8 pages of memory at a time. When using ZRAM, the incremental cost of reading 1 page at a time is negligible and may help in case the device is under extreme memory pressure.
+    write /proc/sys/vm/page-cluster 0
 
     write /proc/sys/vm/highmem_is_dirtyable 1
     write /proc/sys/vm/min_free_kbytes 4096
 
 on boot
+    chmod 0666 /dev/pvrsrvkm
+# change permissions for Tiler driver
+    chmod 0777 /dev/tiler
+    chmod 0777 /dev/dmm
+    
+# change permissions for ION driver
+    chmod 0777 /dev/ion
 
-	#chmod 0666 /dev/pvrsrvkm
-	# change permissions for Tiler driver
-    #chmod 0777 /dev/tiler
-    #chmod 0777 /dev/dmm
+# Prevents permission denied error for telephony
+    chmod 0644 /proc/cmdline
+
+# Create Directory for Secure Storage
+    mkdir /misc/smc 0770 system system
+
+# debugfs
+    mount debugfs /sys/kernel/debug /sys/kernel/debug
+
+# usb serial
+    chmod 0777 /dev/ttyGS0
+    chmod 0777 /dev/ttyGS1
+    chmod 0777 /dev/ttyGS2
 
 ### LGE GPS
 # gps permissions
     chown system system /sys/devices/platform/gps_gpio/poweron
+    chmod 0777 /sys/devices/platform/gps_gpio/poweron
     chown system system /sys/devices/platform/gps_gpio/reset
+    chmod 0777 /sys/devices/platform/gps_gpio/reset
     mkdir /data/gps 0775 system net_raw
     mkdir /data/gps/var 0775 system net_raw
     mkdir /data/gps/run 0775 system net_raw
@@ -414,39 +585,28 @@ on boot
     mkdir /data/cache
     chmod 777 /data/cache
 
+
 service pvrsrvinit /vendor/bin/pvrsrvinit
-    class core
-    user root
-    oneshot
-
-
-
-
-# load IVA firmware
-#service baseimage /system/bin/syslink_daemon.out /system/base_image_sys_m3.xem3 /system/base_image_app_m3.xem3
-#    class core
-#     critical
-#     user media
-#     group media
-#     oneshot
-
-
+	class core
+    	user root
+	group root
+    	oneshot
+	disabled
 
 ## GPS
 service glgps /system/bin/glgps -c /system/etc/gps_brcm_conf.xml
-    class main
-    user system
-    group net_raw sdcard_rw system net_admin inet
+        class main
+        user system
+        group net_raw sdcard_rw system net_admin inet
 
 service lgcpversion /system/bin/lgcpversion
-    class late_start
-    user root
-    oneshot
+        class late_start
+        user root
+        oneshot
+
 
 service charger /charger
-    class charger
-    user root
-    group root
-    oneshot
-
-
+        class charger
+        user root
+        group root
+        oneshot
