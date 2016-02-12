@@ -58,6 +58,7 @@
 #define OMAPFB_GET_VRAM_INFO	OMAP_IOR(61, struct omapfb_vram_info)
 #define OMAPFB_SET_TEARSYNC	OMAP_IOW(62, struct omapfb_tearsync_info)
 #define OMAPFB_GET_DISPLAY_INFO	OMAP_IOR(63, struct omapfb_display_info)
+#define OMAPFB_ENABLEVSYNC	OMAP_IOW(64, int)
 
 #define OMAPFB_CAPS_GENERIC_MASK	0x00000fff
 #define OMAPFB_CAPS_LCDC_MASK		0x00fff000
@@ -251,6 +252,8 @@ struct omapfb_platform_data {
 	struct omap_lcd_config		lcd;
 	struct omapfb_mem_desc		mem_desc;
 	void				*ctrl_platform_data;
+	__u32				xres_virtual;
+	__u32				yres_virtual;
 };
 
 /* in arch/arm/plat-omap/fb.c */
@@ -271,3 +274,4 @@ void omapfb_dss2fb_timings(struct omap_video_timings *dss_timings,
 #endif
 
 #endif /* __OMAPFB_H */
+
