@@ -337,6 +337,12 @@ typedef struct hwc_layer_list_extended {
 
 #endif
 
+#ifdef OMAP_ENHANCEMENT_S3D
+    uint32_t type;
+    uint32_t viewOrder;
+    uint32_t renderMode;
+#endif
+
 /* This represents a display, typically an EGLDisplay object */
 typedef void* hwc_display_t;
 
