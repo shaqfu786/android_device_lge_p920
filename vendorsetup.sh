@@ -15,4 +15,4 @@
 #
 
 add_lunch_combo full_p920-eng
-add_lunch_combo cm_p920
+add_lunch_combo cm_p920-userdebug
