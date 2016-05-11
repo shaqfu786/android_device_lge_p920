@@ -81,17 +81,22 @@ $(call inherit-product, build/target/product/full.mk)
 PRODUCT_AAPT_CONFIG := normal hdpi
 PRODUCT_AAPT_PREF_CONFIG := hdpi
 
+# Wifi
 PRODUCT_PACKAGES += \
     wlan_loader \
     wlan_cu \
     tiap_loader \
     tiap_cu \
-    audio_policy.omap4 \
-    libasound \
+
+# Audio
+PRODUCT_PACKAGES += \
     libaudioutils \
-    libaudiohw_legacy \
-    audio.a2dp.default 
-    
+    audio.primary.p920 \
+    audio.hdmi.p920 \
+    audio.usb.default \
+    audio.a2dp.default \
+    audio.r_submix.default \
+    audio_policy.default
 
 # BlueZ test tools
 PRODUCT_PACKAGES += \
