@@ -1,0 +1,11 @@
+on boot
+    setprop rild.libpath	/system/lib/lge-ril.so
+    #setprop rild.libargs	-d /dev/xmd-tty0
+#BEGIN: RIP-27366 seunghwan.jin@lge.com 20120613
+#RIP-27366 - [U2]HSI Log enable/disable feature is added to hiddenMenu
+on property:persist.service.hsilog.enable=0
+    write /proc/driver/hsi 0
+on property:persist.service.hsilog.enable=1
+    write /proc/driver/hsi 1
+#RIP-27366 - [U2]HSI Log enable/disable feature is added to hiddenMenu
+#END: RIP-27366 seunghwan.jin@lge.com 20120613

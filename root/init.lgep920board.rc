@@ -1,0 +1,33 @@
+# PRODUCT_COPY_FILES in device.mk 'll rename this file to init.lgesu760board.rc on system.img
+
+# This is COSMO common init.rc
+import init.cosmo.rc
+
+
+# This is Open specific init.rc
+# LGE_ADD_START, woojoon.yi@lge.com, adding busybox binary
+    chmod 0777 /system/xbin/busybox
+# LGE_ADD_END
+
+# [MO2] jeseong.yang@lge.com 2012-10-30 [START]
+on post-fs-data
+	setprop ro.crypto.keyfile.userdata /dev/block/platform/omap/omap_hsmmc.1/by-name/nv2
+# [MO2] jeseong.yang@lge.com 2012-10-30 [END]
+
+# [LGE_S][IPSecVPN] 20120201, iamjm.oh@lge.com : Authentec IPSecVPN Kernel Module install
+on boot
+	insmod /system/lib/modules/vpnclient.ko
+# [LGE_E][IPSecVPN] 20120201, iamjm.oh@lge.com : Authentec IPSecVPN Kernel Module install
+       
+# [LGE_S][IPSecVPN] 20120201, iamjm.oh@lge.com : Authentec IPSecVPN Service & IPSecVpn modules permission change
+service vpnclientpm /system/bin/vpnclientpm -O /data/data/com.ipsec.vpnclient/vpnclientpm.txt
+  class main
+# uid dropped to system when capabilities are set
+  group system net_admin net_raw
+  disabled
+
+service vpncstarter /system/bin/vpncstarter
+  class main
+  user system
+  group system net_admin net_raw
+# [LGE_E][IPSecVPN] 20120201, iamjm.oh@lge.com : Authentec IPSecVPN Service & IPSecVpn modules permission change

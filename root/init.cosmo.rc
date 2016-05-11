@@ -1,0 +1,971 @@
+# This is COSMO Common init.rc File
+# If there is some carrier specific thing, please move it to init.{TARGET_PRODUCT}.rc
+import init.lgep920board.usb.rc
+import init.lge.ril.rc
+
+on early-init
+    # Increase readahead buffers on MMC devices
+    write /sys/block/mmcblk0/bdi/read_ahead_kb 512
+    write /sys/block/mmcblk1/bdi/read_ahead_kb 512
+
+    # Begin Immersion changes
+    export VIBE_PIPE_PATH /dev/pipes
+
+on init
+    sysclktz 0
+ 
+    loglevel 3
+
+# See storage config details at http://source.android.com/tech/storage/
+    # Create mount points for Sdcard0(Internal_sd)
+    mkdir /mnt/media_rw/sdcard0 0700 media_rw media_rw
+    mkdir /storage/sdcard0 0700 root root
+
+    export EXTERNAL_STORAGE /storage/sdcard0
+
+    # for backwards compatibility
+    symlink /storage/sdcard0 /sdcard
+    symlink /storage/sdcard0 /mnt/sdcard
+
+    # Create mount points for Sdcard1(External_sd)
+    mkdir /mnt/media_rw/sdcard1 0700 media_rw media_rw
+    mkdir /storage/sdcard1 0700 root root
+
+    export SECONDARY_STORAGE /storage/sdcard1
+
+    # for backwards compatibility
+    symlink /storage/sdcard1 /ext_sdcard
+    symlink /storage/sdcard1 /mnt/ext_sdcard
+
+    mkdir /storage/sdcard0/.android_secure 0775 system system
+    symlink /storage/sdcard0/.android_secure /sdcard/.android_secure
+    symlink /storage/sdcard0/.android_secure /mnt/sdcard/.android_secure
+
+    # Begin Immersion changes
+    mkdir /dev/pipes 0771 shell shell
+
+
+    # LGE_CHANGE [jugwan.eom@lge.com] for hidden set configuration
+    chown system system /sys/module/lge_handle_panic/parameters/hidden_reset_enable
+    chmod 660 /sys/module/lge_handle_panic/parameters/hidden_reset_enable
+
+on early-fs
+    # LGE's mount points
+    mkdir /dvp 0771 system system
+    mkdir /log 0771 root root
+    mkdir /mpt 0775 system system
+    # 2012-10-26 sangeun.sung@lge.com Widevine DRM at&t patition change
+    mkdir /lgdrm 0771 lgdrm lgdrm_acc
+    # 2012-10-26 sangeun.sung@lge.com Widevine DRM at&t patition change
+
+on fs
+    mount_all /fstab.lgep920board
+    swapon_all /fstab.lgep920board
+
+    # pvr module
+    insmod /system/lib/modules/pvrsrvkm_sgx540_120.ko
+    start pvrsrvinit
+
+    # mount mtd partitions
+    wait /dev/block/platform/omap/omap_hsmmc.1/by-name/system
+    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/system /system ro barrier=1
+
+    wait /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
+    exec /system/bin/tune2fs -u system -m 10 /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
+    exec /system/bin/e2fsck -p /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
+    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata /data nosuid nodev barrier=1 noauto_da_alloc
+
+    wait /dev/block/platform/omap/omap_hsmmc.1/by-name/cache
+    exec /system/bin/e2fsck -p /dev/block/platform/omap/omap_hsmmc.1/by-name/cache
+    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/cache /cache nosuid nodev barrier=1
+
+    mkdir /data/ve 0770 radio radio
+
+    # LGE_BSP 2012-02-01 [myeonggyu.son@lge.com] disable FUSE property value
+    setprop ro.crypto.fuse_sdcard false
+
+    # S3D
+    # change permissions for S3D hardware
+    # chown system system /sys/devices/platform/omapdss/display0/s3d_enable
+    # chown system system /sys/devices/platform/omapdss/display0/s3d_type
+    # chown system system /sys/devices/platform/omapdss/display1/s3d_enable
+    # chown system system /sys/devices/platform/omapdss/display1/s3d_type
+
+    # Bluetooth
+    insmod /system/lib/modules/compat.ko
+    # insmod /system/lib/modules/bluetooth.ko
+    # insmod /system/lib/modules/rfcomm.ko 
+    insmod /system/lib/modules/btwilink.ko      
+    # insmod /system/lib/modules/bnep.ko
+    insmod /system/lib/modules/tty_hci.ko
+
+    # add dummy drive for wifi pre-malloc
+    # insmod /system/lib/modules/wl12xx_prekm.ko
+    insmod /system/lib/modules/compat.ko
+    insmod /system/lib/modules/cfg80211.ko
+    insmod /system/lib/modules/mac80211.ko
+    insmod /system/lib/modules/wl12xx.ko
+
+on post-fs-data
+    chown system system /dvp
+    chmod 0771 /dvp
+    chown lgdrm lgdrm_acc /lgdrm
+    chmod 0771 /lgdrm
+
+    chown radio radio /data/ve
+    chmod 0755 /data/ve
+
+    chown system system /mpt
+    chmod 0775 /mpt
+
+    # Set enable_smp if BT LE is supported
+    write /sys/module/bluetooth/parameters/enable_smp 1
+
+    # symlink egl.cfg
+    symlink /sys/egl/egl.cfg /system/lib/egl/egl.cfg
+
+    mkdir /data/misc/wifi 0775 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wifi/softap 0771 wifi wifi
+    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
+    # mo2hyuntae.do@lge.com SoftAP client UI S 
+    mkdir /data/misc/dhcp 0770 dhcp system
+    chown dhcp system /data/misc/dhcp	
+    # SoftAP client UI E
+    chmod 0666 /data/misc/wifi/wpa_supplicant.conf
+    chmod 0666 /data/misc/wifi/hostapd.conf
+    chmod 0775 /data/misc/wifi 
+
+    # for HDCP
+    mkdir /data/mhl 0770 radio radio
+    chown radio radio /data/mhl
+    chmod 0775 /data/mhl/hdcp_on
+    # add symlink for HDCP key
+    symlink /data/en_hdcp.bin /system/vendor/firmware/hdcp.keys
+
+    # we will remap this as /mnt/sdcard with the sdcard fuse tool
+    #mkdir /data/media 0775 media_rw media_rw
+    #chown media_rw media_rw /data/media
+
+    # gyro cal data
+    mkdir /data/misc/sensor
+    chown system misc /data/misc/sensor 
+    chmod 0777 /data/misc/sensor
+
+    # audio file access 
+    mkdir /data/audio 0771 media audio
+    chown media audio /data/audio
+    chmod 0771 /data/audio
+
+    # bluetooth power up/down interface 
+    chmod 0660 /sys/class/rfkill/rfkill0/state
+    chmod 0660 /sys/class/rfkill/rfkill0/type
+    chmod 0660 /sys/class/rfkill/rfkill1/state
+    chmod 0660 /sys/class/rfkill/rfkill1/type
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill1/state
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill1/type
+
+    chmod 0600 /dev/ttyO1
+    chown bluetooth bluetooth /dev/ttyO1
+
+    chmod 0660 /sys/devices/platform/bd_address/bdaddr_if
+    chown radio radio /sys/devices/platform/bd_address/bdaddr_if
+
+    mkdir /data/data/btips 0777 bluetooth bluetooth
+    mkdir /data/data/btips/TI 0777 bluetooth bluetooth
+
+    setprop service.brcm.bt.btld 0
+    setprop service.brcm.bt.activation 0
+    setprop service.brcm.bt.srv_active 0
+    setprop service.brcm.bt.hcid_active 0
+    setprop sys.settings_secure_version 0
+
+    # gps permissions
+    # GPS GPIO Setting - refer gps_gpio.c(android\kernel\drivers\p940\misc)
+    chown system system /sys/devices/platform/gps_gpio/poweron
+    chown system system /sys/devices/platform/gps_gpio/reset
+    # GPS UART Setting 
+    chown system system /dev/ttyO2
+    # GPS RIL port Setting 
+    chown system system /dev/pts17
+
+    mkdir /data/gps
+    chmod 770 /data/gps
+    chown system system /data/gps
+    mkdir /data/gps/log
+    chmod 770 /data/gps/log
+    chown system system /data/gps/log 
+    
+    mkdir /data/cache
+    chmod 770 /data/cache
+    chown system system /data/cache
+    
+    # chown root /system/bin/glgps
+    chown system system /system/bin/glgps
+    chown system system /system/etc/gps_brcm_conf.xml
+    chown system system /system/etc/cert/
+    chown system system /system/etc/cert/lge.cer   
+    
+    # Create dump dir and collect dumps.
+    mkdir /data/dontpanic
+    chown root system /data/dontpanic
+    chmod 0754 /data/dontpanic
+
+    # collect ramconsole data
+    copy /proc/last_kmsg /data/dontpanic/last_kmsg.txt
+    chown root log /data/dontpanic/last_kmsg.txt
+    chmod 0640 /data/dontpanic/last_kmsg.txt
+
+    # collect apanic data, free resources and re-arm trigger
+    copy /proc/apanic_console /data/dontpanic/apanic_console
+    chown root log /data/dontpanic/apanic_console
+    chmod 0640 /data/dontpanic/apanic_console
+
+    copy /proc/apanic_threads /data/dontpanic/apanic_threads
+    chown root log /data/dontpanic/apanic_threads
+    chmod 0640 /data/dontpanic/apanic_threads
+
+    write /proc/apanic_console 1
+
+    # power
+    chown system system /sys/devices/platform/omap/omap_i2c.1/i2c-1/1-0049/twl6030_bci/smpl_en
+    chown system system /sys/devices/platform/omap/omap_i2c.1/i2c-1/1-0049/twl6030_bci/abnormal_wakelock_dis
+    chown system system /sys/class/power_supply/battery/temp_control
+    chown radio radio /sys/class/power_supply/battery/charger_mode
+    chown radio radio /sys/class/power_supply/battery/gauge_control
+    chown radio radio /sys/class/power_supply/bk_battery/voltage_now
+    chmod 0664 /sys/devices/platform/omap/omap_i2c.4/i2c-4/4-0036/state
+
+    # for CTS Pass
+    chown system sdcard_rw /sys/kernel/kobject_lge_nvdata/dynamic_nvdata_raw_read
+    chmod 0664 /sys/kernel/kobject_lge_nvdata/dynamic_nvdata_raw_read
+    chown system sdcard_rw /sys/kernel/kobject_lge_nvdata/dynamic_nvdata_raw_write
+    chmod 0664 /sys/kernel/kobject_lge_nvdata/dynamic_nvdata_raw_write
+    chown system sdcard_rw /sys/kernel/kobject_lge_nvdata/static_nvdata_raw_read
+    chmod 0664 /sys/kernel/kobject_lge_nvdata/static_nvdata_raw_read
+    chown system sdcard_rw /sys/kernel/kobject_lge_nvdata/static_nvdata_raw_write
+    chmod 0664 /sys/kernel/kobject_lge_nvdata/static_nvdata_raw_write
+
+    # change persmissions for ALS/PROX_SENSOR
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/interrupt_als
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/interrupt_prox
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/proxidata
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/luxdata
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/DF
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/GA
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/piht
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/pilt
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/pers
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/ppcount
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/wtime
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/ptime
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/atime
+
+    chmod 0775 /dev/mpu
+    chmod 0775 /dev/mpuirq
+    chmod 0775 /dev/timerirq
+
+    # change permissions for KEY
+    chown radio radio /sys/devices/platform/lge-gkpd/key_test_mode
+    chown radio radio /sys/devices/platform/omap/omap4-keypad/key_saving
+
+    mkdir /data/logger 0775 system system
+    chown system system /data/logger
+    chmod 0771 /data/logger
+
+    chown root radio /proc/cmdline
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0020/gripsuppression
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0020/handsuppression
+    chown system radio /sys/devices/platform/omap/omap_i2c.2/i2c-2/2-0036/brightness
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0036/enable
+    chown system radio /sys/devices/platform/keypad_led/leds/keyboard-backlight/brightness
+    chown system radio /sys/devices/platform/omap-keypad/key_test_mode
+    chown system radio /sys/devices/platform/i2c_omap.4/i2c-4/4-0068/cal_onoff
+    chown system radio /misc/cal.bin
+
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/atime
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/ptime
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/wtime
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/ppcount
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/pers
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/pilt
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/piht
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/GA
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/DF
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/pdata
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/interrupt_als
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/interrupt_prox
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/proxidata
+    chown system system /sys/devices/platform/omap/omap_i2c.3/i2c-3/3-0039/luxdata
+
+    chown system system /sys/devices/platform/omapdss/display0/enabled
+    chown system system /sys/devices/platform/omapdss/display1/enabled
+    chown system system /sys/devices/platform/omapdss/display2/enabled
+    chown system system /sys/devices/platform/omapdss/display3/enabled
+    chown system system /sys/devices/platform/omapdss/display0/name
+    chown system system /sys/devices/platform/omapdss/display1/name
+    chown system system /sys/devices/platform/omapdss/display2/name
+    chown system system /sys/devices/platform/omapdss/display3/name
+    chown system system /sys/devices/platform/omapdss/overlay0/manager
+    chown system system /sys/devices/platform/omapdss/overlay1/manager
+    chown system system /sys/devices/platform/omapdss/overlay2/manager
+    chown system system /sys/devices/platform/omapdss/overlay3/manager
+    chown system system /sys/devices/platform/omapdss/overlay0/zorder
+    chown system system /sys/devices/platform/omapdss/overlay1/zorder
+    chown system system /sys/devices/platform/omapdss/overlay2/zorder
+    chown system system /sys/devices/platform/omapdss/overlay3/zorder
+    chown system system /sys/devices/platform/omapdss/overlay0/position
+    chown system system /sys/devices/platform/omapdss/overlay1/position
+    chown system system /sys/devices/platform/omapdss/overlay2/position
+    chown system system /sys/devices/platform/omapdss/overlay3/position
+    chown system system /sys/devices/platform/omapdss/overlay0/output_size
+    chown system system /sys/devices/platform/omapdss/overlay1/output_size
+    chown system system /sys/devices/platform/omapdss/overlay2/output_size
+    chown system system /sys/devices/platform/omapdss/overlay3/output_size
+    chown system system /sys/devices/platform/omapdss/overlay0/portrait_position
+    chown system system /sys/devices/platform/omapdss/overlay1/portrait_position
+    chown system system /sys/devices/platform/omapdss/overlay2/portrait_position
+    chown system system /sys/devices/platform/omapdss/overlay3/portrait_position
+    chown system system /sys/devices/platform/omapdss/overlay0/portrait_output_size
+    chown system system /sys/devices/platform/omapdss/overlay1/portrait_output_size
+    chown system system /sys/devices/platform/omapdss/overlay2/portrait_output_size
+    chown system system /sys/devices/platform/omapdss/overlay3/portrait_output_size
+    chown system system /sys/devices/platform/omapdss/overlay0/input_size
+    chown system system /sys/devices/platform/omapdss/overlay1/input_size
+    chown system system /sys/devices/platform/omapdss/overlay2/input_size
+    chown system system /sys/devices/platform/omapdss/overlay3/input_size
+    chown system system /sys/devices/platform/omapdss/overlay0/color_mode
+    chown system system /sys/devices/platform/omapdss/overlay1/color_mode
+    chown system system /sys/devices/platform/omapdss/overlay2/color_mode
+    chown system system /sys/devices/platform/omapdss/overlay3/color_mode
+    chown system system /sys/devices/platform/omapdss/manager0/name
+    chown system system /sys/devices/platform/omapdss/manager0/display
+    chown system system /sys/devices/platform/omapdss/manager0/trans_key_value
+    chown system system /sys/devices/platform/omapdss/manager0/trans_key_type
+    chown system system /sys/devices/platform/omapdss/manager0/trans_key_enabled
+    chown system system /sys/devices/platform/omapdss/manager1/name
+    chown system system /sys/devices/platform/omapdss/manager1/display
+    chown system system /sys/devices/platform/omapdss/manager1/trans_key_value
+    chown system system /sys/devices/platform/omapdss/manager1/trans_key_type
+    chown system system /sys/devices/platform/omapdss/manager1/trans_key_enabled
+    chown system system /sys/devices/platform/omapdss/manager2/name
+    chown system system /sys/devices/platform/omapdss/manager2/display
+    chown system system /sys/devices/platform/omapdss/manager2/trans_key_value
+    chown system system /sys/devices/platform/omapdss/manager2/trans_key_type
+    chown system system /sys/devices/platform/omapdss/manager2/trans_key_enabled
+    chown system system /sys/devices/platform/omapdss/overlay0/enabled
+    chown system system /sys/devices/platform/omapdss/overlay1/enabled
+    chown system system /sys/devices/platform/omapdss/overlay2/enabled
+    chown system system /sys/devices/platform/omapdss/overlay3/enabled
+
+    chown system system /sys/devices/platform/omapdss/display0/timings
+    chown system system /sys/devices/platform/omapdss/display1/timings
+    chown system system /sys/devices/platform/omapdss/display2/timings
+    chown system system /sys/devices/platform/omapdss/display3/timings
+
+    chown system system /sys/devices/platform/omapfb/graphics/fb0/overlays
+    chown system system /sys/devices/platform/omapfb/graphics/fb0/overlays_rotate
+    chown system system /sys/devices/platform/omapfb/graphics/fb1/overlays
+    chown system system /sys/devices/platform/omapfb/graphics/fb1/overlays_rotate
+
+    chown system system /sys/devices/platform/omapdss/display1/hdmi_out
+    chown system system /sys/devices/platform/omapdss/display1/hdmi_source
+    chown system system /sys/devices/platform/omapdss/display1/hdmi_key
+    chown system system /sys/devices/platform/omapdss/display1/hdmi_drm_lock
+    chown system system /sys/devices/platform/omapdss/display1/hdmi_drm_usr_sel
+    chown system system /sys/devices/platform/omapdss/display1/custom_edid_timing
+    chown system system /sys/devices/platform/omapdss/display1/hpd_enabled
+
+    chown system system /sys/devices/platform/omapdss/display0/sgx_manual_recovery
+    chmod 0775 /sys/devices/platform/omapdss/display0/sgx_manual_recovery
+
+    # change permissions for overlay managers and display devices
+    chmod 0775 /sys/devices/platform/omapdss/display0/enabled
+    chmod 0775 /sys/devices/platform/omapdss/display1/enabled
+    chmod 0775 /sys/devices/platform/omapdss/display2/enabled
+    chmod 0775 /sys/devices/platform/omapdss/display3/enabled
+    chmod 0775 /sys/devices/platform/omapdss/display0/name
+    chmod 0775 /sys/devices/platform/omapdss/display1/name
+    chmod 0775 /sys/devices/platform/omapdss/display2/name
+    chmod 0775 /sys/devices/platform/omapdss/display3/name
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/manager
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/manager
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/manager
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/manager
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/zorder
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/zorder
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/zorder
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/zorder
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/position
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/position
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/position
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/position
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/output_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/output_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/output_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/output_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/portrait_position
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/portrait_position
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/portrait_position
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/portrait_position
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/portrait_output_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/portrait_output_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/portrait_output_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/portrait_output_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/input_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/input_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/input_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/input_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/color_mode
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/color_mode
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/color_mode
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/color_mode
+
+    # change permissions for manager tranparency parameters
+    chmod 0775 /sys/devices/platform/omapdss/manager0/name
+    chmod 0775 /sys/devices/platform/omapdss/manager0/display
+    chmod 0775 /sys/devices/platform/omapdss/manager0/trans_key_value
+    chmod 0775 /sys/devices/platform/omapdss/manager0/trans_key_type
+    chmod 0775 /sys/devices/platform/omapdss/manager0/trans_key_enabled
+    chmod 0775 /sys/devices/platform/omapdss/manager1/name
+    chmod 0775 /sys/devices/platform/omapdss/manager1/display
+    chmod 0775 /sys/devices/platform/omapdss/manager1/trans_key_value
+    chmod 0775 /sys/devices/platform/omapdss/manager1/trans_key_type
+    chmod 0775 /sys/devices/platform/omapdss/manager1/trans_key_enabled
+    chmod 0775 /sys/devices/platform/omapdss/manager2/name
+    chmod 0775 /sys/devices/platform/omapdss/manager2/display
+    chmod 0775 /sys/devices/platform/omapdss/manager2/trans_key_value
+    chmod 0775 /sys/devices/platform/omapdss/manager2/trans_key_type
+    chmod 0775 /sys/devices/platform/omapdss/manager2/trans_key_enabled
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/enabled
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/enabled
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/enabled
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/enabled
+
+    # change permissions for display timings to get the resolutions
+    chmod 0775 /sys/devices/platform/omapdss/display0/timings
+    chmod 0775 /sys/devices/platform/omapdss/display1/timings
+    chmod 0775 /sys/devices/platform/omapdss/display2/timings
+    chmod 0775 /sys/devices/platform/omapdss/display3/timings
+
+    # change framebuffer permission
+    chmod 0775 /sys/devices/platform/omapfb/graphics/fb0/overlays
+    chmod 0775 /sys/devices/platform/omapfb/graphics/fb0/overlays_rotate
+    chmod 0775 /sys/devices/platform/omapfb/graphics/fb1/overlays
+    chmod 0775 /sys/devices/platform/omapfb/graphics/fb1/overlays_rotate
+
+    # change permissions for LCD backlightness
+    chmod 0664 /sys/devices/platform/i2c_omap.2/i2c-2/2-0036/brightness
+
+    # Led_on
+    chmod 0664 /sys/devices/platform/keypad_led/leds/keyboard-backlight/brightness
+    chmod 0664 /sys/devices/platform/omap-keypad/key_test_mode
+
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/flash
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/flash_brightness
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/torch
+    chown system system /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/enable
+
+    # Lge kernel mux
+    chown root  radio /sys/class/power_supply/battery/gauge_control
+    chown root  radio /sys/class/power_supply/battery/voltage_now
+
+    # Disable fb1 
+    write /sys/devices/platform/omapfb/graphics/fb1/overlays ""
+    write /sys/devices/platform/omapdss/overlay1/enabled 0
+    # write /sys/devices/platform/omapdss/overlay1/manager "2lcd"
+
+    # Seting for HDMI plug-in
+    write /sys/devices/platform/omapdss/display1/enabled 0
+    write /sys/devices/platform/omapdss/display1/hpd_enabled 1
+
+    # Setting HDMI Routing in system
+    write /sys/devices/platform/omapdss/overlay3/manager "tv"
+    write /sys/devices/platform/omapdss/overlay3/zorder 2
+
+    chmod 0775 /sys/devices/platform/omapdss/display1/hdmi_out
+    chmod 0775 /sys/devices/platform/omapdss/display1/hdmi_source
+    chmod 0775 /sys/devices/platform/omapdss/display1/hdmi_key
+    chmod 0775 /sys/devices/platform/omapdss/display1/hdmi_rotation
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/input_size
+    chmod 0775 /sys/devices/platform/omapdss/display1/hdmi_3d_enable
+    chmod 0775 /sys/devices/platform/omapdss/display1/hdmi_3d_type
+    chmod 0775 /sys/devices/platform/omapdss/display1/hdmi_drm_lock
+    chmod 0775 /sys/devices/platform/omapdss/display1/hdmi_drm_usr_sel
+    chmod 0775 /sys/devices/platform/omapdss/display1/custom_edid_timing
+    chmod 0775 /sys/devices/platform/omapdss/display1/hpd_enabled
+
+    # HDMI device
+    chown system system /sys/devices/platform/omapdss/overlay0/req_enabled
+    chown system system /sys/devices/platform/omapdss/overlay0/req_rotation
+    chown system system /sys/devices/platform/omapdss/overlay0/req_position
+    chown system system /sys/devices/platform/omapdss/overlay0/req_out_size
+    chown system system /sys/devices/platform/omapdss/overlay0/req_manager
+    chown system system /sys/devices/platform/omapdss/overlay0/req_request
+    chown system system /sys/devices/platform/omapdss/overlay0/req_global_alpha
+    chown system system /sys/devices/platform/omapdss/overlay0/req_zorder
+
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/req_enabled
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/req_rotation
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/req_position
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/req_out_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/req_manager
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/req_request
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/req_global_alpha
+    chmod 0775 /sys/devices/platform/omapdss/overlay0/req_zorder
+
+    chown system system /sys/devices/platform/omapdss/overlay1/req_enabled
+    chown system system /sys/devices/platform/omapdss/overlay1/req_rotation
+    chown system system /sys/devices/platform/omapdss/overlay1/req_position
+    chown system system /sys/devices/platform/omapdss/overlay1/req_out_size
+    chown system system /sys/devices/platform/omapdss/overlay1/req_manager
+    chown system system /sys/devices/platform/omapdss/overlay1/req_request
+    chown system system /sys/devices/platform/omapdss/overlay1/req_global_alpha
+    chown system system /sys/devices/platform/omapdss/overlay1/req_zorder
+
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/req_enabled
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/req_rotation
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/req_position
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/req_out_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/req_manager
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/req_request
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/req_global_alpha
+    chmod 0775 /sys/devices/platform/omapdss/overlay1/req_zorder
+
+    chown system system /sys/devices/platform/omapdss/overlay2/req_enabled
+    chown system system /sys/devices/platform/omapdss/overlay2/req_rotation
+    chown system system /sys/devices/platform/omapdss/overlay2/req_position
+    chown system system /sys/devices/platform/omapdss/overlay2/req_out_size
+    chown system system /sys/devices/platform/omapdss/overlay2/req_manager
+    chown system system /sys/devices/platform/omapdss/overlay2/req_request
+    chown system system /sys/devices/platform/omapdss/overlay2/req_global_alpha
+    chown system system /sys/devices/platform/omapdss/overlay2/req_zorder
+
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/req_enabled
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/req_rotation
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/req_position
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/req_out_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/req_manager
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/req_request
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/req_global_alpha
+    chmod 0775 /sys/devices/platform/omapdss/overlay2/req_zorder
+
+    chown system system /sys/devices/platform/omapdss/overlay3/req_enabled
+    chown system system /sys/devices/platform/omapdss/overlay3/req_rotation
+    chown system system /sys/devices/platform/omapdss/overlay3/req_position
+    chown system system /sys/devices/platform/omapdss/overlay3/req_out_size
+    chown system system /sys/devices/platform/omapdss/overlay3/req_manager
+    chown system system /sys/devices/platform/omapdss/overlay3/req_request
+    chown system system /sys/devices/platform/omapdss/overlay3/req_global_alpha
+    chown system system /sys/devices/platform/omapdss/overlay3/req_zorder
+
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/req_enabled
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/req_rotation
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/req_position
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/req_out_size
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/req_manager
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/req_request
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/req_global_alpha
+    chmod 0775 /sys/devices/platform/omapdss/overlay3/req_zorder
+
+    # Enable hotplug detection for HDMI
+    write /sys/devices/platform/omapdss/display1/hpd_enabled 1
+
+    # Increase TCP Buffer Size
+    setprop net.tcp.buffersize.default 4096,87380,393216,4096,16384,110208
+    setprop net.tcp.buffersize.wifi 524288,1048576,2097152,262144,524288,1048576
+    setprop net.tcp.buffersize.lte 524288,1048576,2097152,262144,524288,1048576
+    setprop net.tcp.buffersize.umts 4094,87380,393216,4096,16384,110208
+    setprop net.tcp.buffersize.hspa 4094,87380,393216,4096,16384,110208
+    setprop net.tcp.buffersize.edge 4093,26280,35040,4096,16384,35040
+    setprop net.tcp.buffersize.gprs 4092,8760,11680,4096,8760,11680 
+
+    # Disable IPv6 for mobile network
+    write /proc/sys/net/ipv6/conf/rmnet0/disable_ipv6 1
+    write /proc/sys/net/ipv6/conf/rment1/disable_ipv6 1
+    write /proc/sys/net/ipv6/conf/rmnet2/disable_ipv6 1
+
+    # flashlight
+    chown system camera /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/torch
+    chmod 0660 /sys/devices/platform/i2c_omap.2/i2c-2/2-0053/torch
+
+    # This is needed by any process that uses socket tagging.
+    chmod 0644 /dev/xt_qtaguid
+
+    setprop persist.service.main.enable 0
+    setprop persist.service.system.enable 0
+    setprop persist.service.radio.enable 0
+    setprop persist.service.events.enable 0
+    setprop persist.service.kernel.enable 0
+    setprop persist.service.ducati.enable 0
+    setprop persist.service.packet.enable 0
+  
+    setprop vold.post_fs_data_done 1    
+
+    chown system system /sys/class/mhl_orient/mhl_dev_orient/MHL_orient
+
+    # Set this property so surfaceflinger is not started by system_init
+    setprop system_init.startsurfaceflinger 0
+
+    class_start core
+    class_start main
+
+    # generate nvs with calibration and mac
+    exec /system/bin/logwrapper /usr/bin/create_nvs -t /lib/firmware/ti-connectivity/wl1271-nvs.bin -e /data/misc/wifi/ti-connectivity/wl1271-nvs.bin -w wl127x
+
+on boot
+    chmod 0666 /dev/pvrsrvkm
+    chown root root /dev/pvrsrvkm
+
+    # change permissions for Tiler driver
+    chmod 0777 /dev/tiler
+    chown root root /dev/tiler
+    chmod 0777 /dev/dmm
+
+    # Create Directory for Secure Storage 
+    mkdir /data/smc 0770 drmrpc drmrpc
+    chown drmrpc drmrpc /data/smc/counter.bin
+    chown drmrpc drmrpc /data/smc/storage.bin
+    chown drmrpc drmrpc /data/smc/system.bin
+
+    mount debugfs /sys/kernel/debug /sys/kernel/debug
+
+    # touch
+    chown system system /sys/devices/virtual/input/lge_touch/keyguard
+
+    # change permissions for ION driver
+    chmod 0777 /dev/ion
+
+    chown system graphics /sys/class/graphics/fb0/overlays
+    chown system graphics /sys/class/graphics/fb0/fit_to_screen
+    chown system graphics /sys/class/graphics/fb0/overlays_rotate
+
+    chown root graphics /dev/graphics/fb0
+    chown root graphics /dev/graphics/fb1
+    chmod 0775 /dev/graphics/fb0
+    chmod 0775 /dev/graphics/fb1
+
+    # change permissions for alsa nodes
+    symlink /dev/snd/pcmC0D0c /dev/pcmC0D0c
+    symlink /dev/snd/pcmC0D0p /dev/pcmC0D0p
+    symlink /dev/snd/controlC0 /dev/controlC0
+    symlink /dev/snd/timer /dev/timer
+    chmod 0777 /dev/pcmC0D0c
+    chmod 0777 /dev/pcmC0D0p
+    chmod 0777 /dev/controlC0
+    chmod 0777 /dev/timer
+
+    chown radio radio /dev/block/mmcblk0p2
+    chown radio radio /dev/block/mmcblk0p3
+    chmod 0660 /dev/block/mmcblk0p2
+    chmod 0660 /dev/block/mmcblk0p3
+
+    # for HiddenMenu
+    chown system system /sys/devices/platform/omapdss/display1/enabled
+    chown system system /sys/devices/platform/omapdss/display1/bestScore
+    chmod 0660 /sys/devices/platform/omapdss/display1/enabled
+    chmod 0660 /sys/devices/platform/omapdss/display1/bestScore
+
+    # change permissions for LCD backlight
+    chown system radio /sys/devices/platform/omap/omap_i2c.2/i2c-2/2-0036/brightness
+    chmod 0664 /sys/devices/platform/omap/omap_i2c.2/i2c-2/2-0036/brightness
+    
+    # change permissions for LCD Gamma Tuning
+    chown system radio /sys/devices/omapdss/display0/gamma_tuning
+    chmod 0660 /sys/devices/omapdss/display0/gamma_tuning
+
+    # change permissions for keylock AT Command
+    chown system radio /sys/devices/platform/omap/omap4-keypad/keylock
+
+    # change permissions for LED backlight
+    chown system radio /sys/class/leds/button-backlight/br_maintain_on
+    chmod 0660 /sys/class/leds/button-backlight/br_maintain_on
+    chmod 0660 /sys/devices/platform/keypad_led/leds/button-backlight/brightness
+
+    # change NFC permission
+    chmod 0666 /dev/pn544
+
+    chmod 0777 /dev/ttyGS0
+    chown system system /dev/ttyGS1    
+    chmod 0660 /dev/ttyGS1
+    chmod 0777 /dev/ttyGS2
+
+    # set permission misc and nv for CTS Pass
+    chown system media_rw /dev/block/platform/omap/omap_hsmmc.1/by-name/misc
+    chmod 0660 /dev/block/platform/omap/omap_hsmmc.1/by-name/misc 
+
+    # MUIC permission
+    chown system radio /sys/class/muic/max14526/state
+    chown system system /sys/class/muic/max14526/int_state
+
+    chmod 0775 /sys/class/muic/max14526/state
+    chmod 0775 /sys/class/muic/max14526/int_state
+    
+    #USB VID permission
+    chown system system /sys/class/android_usb/android0/idVendor    
+    chmod 0644 /sys/class/android_usb/android0/idVendor
+    chown system system /sys/class/android_usb/android0/f_cdrom_storage/lun/cdrom_usbmode
+
+    chown lgdrm lgdrm_acc /lgdrm
+    chmod 0771 /lgdrm
+
+    mkdir /lgdrm/widevine 0770 drm system
+    mkdir /persist/wvl3kb 0770 drm system
+
+service ueventd /sbin/ueventd
+    class core
+    critical
+
+service console /system/bin/sh
+    class core
+    console
+    disabled
+    user shell
+    group log
+
+on property:ro.debuggable=1
+    start console
+
+service servicemanager /system/bin/servicemanager
+    class core
+    user system
+    group system
+    critical
+    onrestart restart zygote
+    onrestart restart media
+    onrestart restart surfaceflinger
+    onrestart restart drm
+
+service surfaceflinger /system/bin/surfaceflinger
+    class main
+    user system
+    group graphics
+    onrestart restart zygote
+
+service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
+    class main
+    socket zygote stream 666
+    onrestart write /sys/android_power/request_state wake
+    onrestart write /sys/power/state on
+    onrestart restart media
+    onrestart restart netd
+
+service drm /system/bin/drmserver
+    class main
+    user drm
+    group system inet drmrpc	
+
+service media /system/bin/mediaserver
+    class main
+    user media
+    group system audio camera graphics inet net_bt net_bt_admin net_raw drmrpc
+    ioprio rt 4
+
+service bootanim /system/bin/bootanimation
+    class main
+    user graphics
+    group graphics
+    disabled
+    oneshot
+
+service lgenv /system/bin/lge_nvd
+    class main
+    user root
+    group system root media_rw sdcard_rw input divxdrm
+    oneshot
+
+    # Temporarily adjust CPU frequency and reset to performance
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor userspace
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed 800000
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor performance
+
+service spritebud /system/xbin/spritebud
+    class main
+    socket spritebud stream 660 root radio
+    user root
+    group root
+
+# initialize the SGX driver
+service pvrsrvinit /vendor/bin/pvrsrvinit
+    class core
+    user root
+    group root
+    oneshot
+    disabled
+
+# create filesystems if necessary
+service setup_fs /system/bin/setup_fs \
+    /dev/block/platform/omap/omap_hsmmc.1/by-name/cache \
+    /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
+    class core
+    user root
+    group root
+    oneshot
+
+service tf_daemon /system/bin/tf_daemon \
+    -d -c /vendor/etc/smc_normal_world_android_cfg.ini
+    class main
+    user root
+    group root
+    oneshot
+    disabled
+
+service smc_pa /system/bin/smc_pa_ctrl \
+    -c /vendor/etc/smc_normal_world_android_cfg.ini \
+    start /vendor/firmware/smc_pa.ift
+    class core
+    user root
+    group root
+    oneshot
+
+service lgcpversion /system/bin/lgcpversion
+    class late_start
+    user root
+    oneshot
+
+service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -dd
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service wpa_supplicant2 /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf -dd
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service p2p_supplicant /system/bin/wpa_supplicant \
+    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf -N \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    -O/data/misc/wifi/sockets \
+    -puse_p2p_group_interface=1 \
+    -e/data/misc/wifi/entropy.bin \
+    -g@android:wpa_wlan0
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service dhcpcd_wlan0 /system/bin/dhcpcd -ABKG
+    class main
+    disabled
+    oneshot
+
+service iprenew_wlan0 /system/bin/dhcpcd -n
+    class main
+    disabled
+    oneshot
+
+service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
+    class main
+    disabled
+    oneshot
+
+service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
+    class main
+    disabled
+    oneshot
+
+service iprenew_bnep0 /system/bin/dhcpcd -n
+    class main
+    disabled
+    oneshot
+
+service hostapd_bin /system/bin/hostapd -d /data/misc/wifi/hostapd.conf
+    socket wpa_wlan1 dgram 660 wifi wifi
+    class main
+    disabled
+    oneshot
+
+service wlan_precheck /system/bin/wlan-precheck
+    class main
+    disabled
+    oneshot
+
+service dhcpcd_p2p /system/bin/dhcpcd -aABKL
+    class main
+    disabled
+    oneshot
+
+service iprenew_p2p /system/bin/dhcpcd -n
+    class main
+    disabled
+    oneshot
+
+service iprenew_bt-pan /system/bin/dhcpcd -n
+    class main
+    disabled
+    oneshot
+
+service dhcpcd_bt-pan /system/bin/dhcpcd -ABKL
+    class main
+    disabled
+    oneshot
+
+service create_nvs /system/bin/calibrator calibrate
+    class main
+    disabled
+    oneshot
+
+service plt_drv_start /system/bin/calibrator plt plt_drv_start
+    disabled
+    oneshot
+   
+service plt_drv_stop /system/bin/calibrator plt plt_drv_stop
+    disabled
+    oneshot
+     
+service run_plt_server /system/bin/calibrator plt plt_server
+    disabled
+    oneshot
+
+service ap_at_command /system/bin/ap_at_command
+    class main
+    user root
+    group system input graphics media_rw sdcard_rw
+
+service glgps /system/bin/glgps -c /system/etc/gps_brcm_conf.xml
+    class main
+    user system
+    group net_raw sdcard_rw system radio
+
+service immvibed /system/bin/immvibed
+    class main
+    user shell
+    group shell
+    oneshot
+
+service charger /charger
+    class charger
+    user root
+    group root
+    oneshot
+
+service uim /system/bin/uim-sysfs
+    class core
+    user bluetooth
+    group bluetooth net_bt_admin
+
+service ril-daemon /system/bin/rild
+   class main
+   socket rild stream 660 root radio
+   socket rild-debug stream 660 radio system
+   user root
+   group radio cache inet misc audio sdcard_rw log media_rw
+
+service swap_on_service /system/bin/sh /system/bin/swap_enable.sh
+    class main
+    user root
+    oneshot
+
+# fusewrapped internal sdcard daemon running as media_rw (1023)
+service fuse_sdcard0 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard0 /storage/sdcard0
+    class late_start
+
+# fusewrapped external sdcard daemon running as media_rw (1023)
+service fuse_sdcard1 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard1 /storage/sdcard1
+    class late_start
+    disabled
