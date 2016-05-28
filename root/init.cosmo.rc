@@ -51,12 +51,11 @@ on init
 
 on early-fs
     # LGE's mount points
+    mkdir /persist 0500 system system
     mkdir /dvp 0771 system system
     mkdir /log 0771 root root
     mkdir /mpt 0775 system system
-    # 2012-10-26 sangeun.sung@lge.com Widevine DRM at&t patition change
     mkdir /lgdrm 0771 lgdrm lgdrm_acc
-    # 2012-10-26 sangeun.sung@lge.com Widevine DRM at&t patition change
 
 on fs
     mount_all /fstab.lgep920board
@@ -67,17 +66,17 @@ on fs
     start pvrsrvinit
 
     # mount mtd partitions
-    wait /dev/block/platform/omap/omap_hsmmc.1/by-name/system
-    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/system /system ro barrier=1
+    # wait /dev/block/platform/omap/omap_hsmmc.1/by-name/system
+    # mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/system /system ro barrier=1
 
-    wait /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
-    exec /system/bin/tune2fs -u system -m 10 /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
-    exec /system/bin/e2fsck -p /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
-    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata /data nosuid nodev barrier=1 noauto_da_alloc
+    # wait /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
+    # exec /system/bin/tune2fs -u system -m 10 /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
+    # exec /system/bin/e2fsck -p /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
+    # mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata /data nosuid nodev barrier=1 noauto_da_alloc
 
-    wait /dev/block/platform/omap/omap_hsmmc.1/by-name/cache
-    exec /system/bin/e2fsck -p /dev/block/platform/omap/omap_hsmmc.1/by-name/cache
-    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/cache /cache nosuid nodev barrier=1
+    # wait /dev/block/platform/omap/omap_hsmmc.1/by-name/cache
+    # exec /system/bin/e2fsck -p /dev/block/platform/omap/omap_hsmmc.1/by-name/cache
+    # mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/cache /cache nosuid nodev barrier=1
 
     mkdir /data/ve 0770 radio radio
 
@@ -92,21 +91,20 @@ on fs
     # chown system system /sys/devices/platform/omapdss/display1/s3d_type
 
     # Bluetooth
-    insmod /system/lib/modules/compat.ko
-    # insmod /system/lib/modules/bluetooth.ko
-    # insmod /system/lib/modules/rfcomm.ko 
+    insmod /system/lib/modules/compat.ko 
     insmod /system/lib/modules/btwilink.ko      
-    # insmod /system/lib/modules/bnep.ko
     insmod /system/lib/modules/tty_hci.ko
 
     # add dummy drive for wifi pre-malloc
-    # insmod /system/lib/modules/wl12xx_prekm.ko
     insmod /system/lib/modules/compat.ko
     insmod /system/lib/modules/cfg80211.ko
     insmod /system/lib/modules/mac80211.ko
     insmod /system/lib/modules/wl12xx.ko
 
 on post-fs-data
+    chown system system /persist
+    chmod 0771 /persist
+
     chown system system /dvp
     chmod 0771 /dvp
     chown lgdrm lgdrm_acc /lgdrm
@@ -118,30 +116,36 @@ on post-fs-data
     chown system system /mpt
     chmod 0775 /mpt
 
+    # Create Directory for widevine
+    mkdir /persist/widevine 0770 drm system
+
     # Set enable_smp if BT LE is supported
     write /sys/module/bluetooth/parameters/enable_smp 1
 
     # symlink egl.cfg
     symlink /sys/egl/egl.cfg /system/lib/egl/egl.cfg
 
-    mkdir /data/misc/wifi 0775 wifi wifi
+    mkdir /data/misc/wifi 0770 wifi wifi
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
-    mkdir /data/misc/wifi/softap 0771 wifi wifi
     mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
-    # mo2hyuntae.do@lge.com SoftAP client UI S 
-    mkdir /data/misc/dhcp 0770 dhcp system
-    chown dhcp system /data/misc/dhcp	
-    # SoftAP client UI E
-    chmod 0666 /data/misc/wifi/wpa_supplicant.conf
-    chmod 0666 /data/misc/wifi/hostapd.conf
-    chmod 0775 /data/misc/wifi 
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+
+    mkdir /data/smc 0770 drmrpc drmrpc
+    chown drmrpc drmrpc /data/smc/counter.bin
+    chown drmrpc drmrpc /data/smc/storage.bin
+    chown drmrpc drmrpc /data/smc/system.bin
+
+    chown dhcp system /data/misc/dhcp
+
+    # Fix wlan MAC addr
+    start fixmac 
 
     # for HDCP
-    mkdir /data/mhl 0770 radio radio
-    chown radio radio /data/mhl
-    chmod 0775 /data/mhl/hdcp_on
+    # mkdir /data/mhl 0770 radio radio
+    # chown radio radio /data/mhl
+    # chmod 0775 /data/mhl/hdcp_on
     # add symlink for HDCP key
-    symlink /data/en_hdcp.bin /system/vendor/firmware/hdcp.keys
+    # symlink /data/en_hdcp.bin /system/vendor/firmware/hdcp.keys
 
     # we will remap this as /mnt/sdcard with the sdcard fuse tool
     #mkdir /data/media 0775 media_rw media_rw
@@ -606,15 +610,6 @@ on post-fs-data
 
     chown system system /sys/class/mhl_orient/mhl_dev_orient/MHL_orient
 
-    # Set this property so surfaceflinger is not started by system_init
-    setprop system_init.startsurfaceflinger 0
-
-    class_start core
-    class_start main
-
-    # generate nvs with calibration and mac
-    exec /system/bin/logwrapper /usr/bin/create_nvs -t /lib/firmware/ti-connectivity/wl1271-nvs.bin -e /data/misc/wifi/ti-connectivity/wl1271-nvs.bin -w wl127x
-
 on boot
     chmod 0666 /dev/pvrsrvkm
     chown root root /dev/pvrsrvkm
@@ -625,10 +620,7 @@ on boot
     chmod 0777 /dev/dmm
 
     # Create Directory for Secure Storage 
-    mkdir /data/smc 0770 drmrpc drmrpc
-    chown drmrpc drmrpc /data/smc/counter.bin
-    chown drmrpc drmrpc /data/smc/storage.bin
-    chown drmrpc drmrpc /data/smc/system.bin
+    mkdir /persist/smc 0770 system system
 
     mount debugfs /sys/kernel/debug /sys/kernel/debug
 
@@ -685,7 +677,7 @@ on boot
     chmod 0660 /sys/devices/platform/keypad_led/leds/button-backlight/brightness
 
     # change NFC permission
-    chmod 0666 /dev/pn544
+    # chmod 0666 /dev/pn544
 
     chmod 0777 /dev/ttyGS0
     chown system system /dev/ttyGS1    
@@ -694,7 +686,10 @@ on boot
 
     # set permission misc and nv for CTS Pass
     chown system media_rw /dev/block/platform/omap/omap_hsmmc.1/by-name/misc
-    chmod 0660 /dev/block/platform/omap/omap_hsmmc.1/by-name/misc 
+    chmod 0660 /dev/block/platform/omap/omap_hsmmc.1/by-name/misc ## misc partition
+
+    # chown system media_rw /dev/block/platform/omap/omap_hsmmc.1/by-name/nv
+    # chmod 0660 /dev/block/platform/omap/omap_hsmmc.1/by-name/nv ## NV partition
 
     # MUIC permission
     chown system radio /sys/class/muic/max14526/state
@@ -703,89 +698,50 @@ on boot
     chmod 0775 /sys/class/muic/max14526/state
     chmod 0775 /sys/class/muic/max14526/int_state
     
-    #USB VID permission
+    # USB VID permission
     chown system system /sys/class/android_usb/android0/idVendor    
     chmod 0644 /sys/class/android_usb/android0/idVendor
     chown system system /sys/class/android_usb/android0/f_cdrom_storage/lun/cdrom_usbmode
-
-    chown lgdrm lgdrm_acc /lgdrm
-    chmod 0771 /lgdrm
-
-    mkdir /lgdrm/widevine 0770 drm system
-    mkdir /persist/wvl3kb 0770 drm system
-
-service ueventd /sbin/ueventd
-    class core
-    critical
-
-service console /system/bin/sh
-    class core
-    console
-    disabled
-    user shell
-    group log
-
-on property:ro.debuggable=1
-    start console
-
-service servicemanager /system/bin/servicemanager
-    class core
-    user system
-    group system
-    critical
-    onrestart restart zygote
-    onrestart restart media
-    onrestart restart surfaceflinger
-    onrestart restart drm
-
-service surfaceflinger /system/bin/surfaceflinger
-    class main
-    user system
-    group graphics
-    onrestart restart zygote
-
-service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
-    class main
-    socket zygote stream 666
-    onrestart write /sys/android_power/request_state wake
-    onrestart write /sys/power/state on
-    onrestart restart media
-    onrestart restart netd
-
-service drm /system/bin/drmserver
-    class main
-    user drm
-    group system inet drmrpc	
-
-service media /system/bin/mediaserver
-    class main
-    user media
-    group system audio camera graphics inet net_bt net_bt_admin net_raw drmrpc
-    ioprio rt 4
-
-service bootanim /system/bin/bootanimation
-    class main
-    user graphics
-    group graphics
-    disabled
-    oneshot
-
-service lgenv /system/bin/lge_nvd
-    class main
-    user root
-    group system root media_rw sdcard_rw input divxdrm
-    oneshot
 
     # Temporarily adjust CPU frequency and reset to performance
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor userspace
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed 800000
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor performance
 
+on property:wifi.ready=1
+   insmod /system/lib/modules/wl12xx_sdio.ko
+
+service fixmac /system/bin/fix-mac.sh
+    class core
+    seclabel u:r:fixmac:s0
+    user root
+    group root
+    oneshot
+    disabled
+
 service spritebud /system/xbin/spritebud
     class main
     socket spritebud stream 660 root radio
     user root
     group root
+
+service lgsecclk /system/bin/lgsecclkserver
+    class main
+    user system
+    group system lgdrm_acc sdcard_rw media_rw
+
+    # restart when servicemanager is restarted
+on property:init.svc.servicemanager=restarting
+    restart lgsecclk
+
+service lgdrm /system/bin/lgdrmserver
+    class main
+    user lgdrm
+    group lgdrm_acc sdcard_rw media_rw system radio
+
+    # restart when servicemanager is restarted
+on property:init.svc.servicemanager=restarting
+    restart lgdrm
 
 # initialize the SGX driver
 service pvrsrvinit /vendor/bin/pvrsrvinit
@@ -795,61 +751,38 @@ service pvrsrvinit /vendor/bin/pvrsrvinit
     oneshot
     disabled
 
-# create filesystems if necessary
-service setup_fs /system/bin/setup_fs \
-    /dev/block/platform/omap/omap_hsmmc.1/by-name/cache \
-    /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
-    class core
-    user root
-    group root
-    oneshot
-
-service tf_daemon /system/bin/tf_daemon \
-    -d -c /vendor/etc/smc_normal_world_android_cfg.ini
-    class main
-    user root
-    group root
-    oneshot
-    disabled
-
-service smc_pa /system/bin/smc_pa_ctrl \
-    -c /vendor/etc/smc_normal_world_android_cfg.ini \
-    start /vendor/firmware/smc_pa.ift
-    class core
-    user root
-    group root
-    oneshot
-
 service lgcpversion /system/bin/lgcpversion
     class late_start
     user root
     oneshot
 
-service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -dd
-    class main
-    socket wpa_wlan0 dgram 660 wifi wifi
-    disabled
-    oneshot
-
-service wpa_supplicant2 /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf -dd
-    class main
-    socket wpa_wlan0 dgram 660 wifi wifi
-    disabled
-    oneshot
+    # Lazy way go get things done when /system(/build.prop) is up
+on property:ro.product.device=p920
+    wait /sys/class/rfkill/rfkill0/type
+    start uim
+    wait /data/misc/wifi
+    start wlan_precheck
 
 service p2p_supplicant /system/bin/wpa_supplicant \
-    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf -N \
     -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
-    -O/data/misc/wifi/sockets \
+    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf \
+    -I/system/etc/wifi/p2p_supplicant_overlay.conf \
     -puse_p2p_group_interface=1 \
-    -e/data/misc/wifi/entropy.bin \
-    -g@android:wpa_wlan0
+    -e/data/misc/wifi/entropy.bin -g@android:wpa_wlan0
     class main
     socket wpa_wlan0 dgram 660 wifi wifi
     disabled
     oneshot
 
-service dhcpcd_wlan0 /system/bin/dhcpcd -ABKG
+service wpa_supplicant /system/bin/wpa_supplicant \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    -e/data/misc/wifi/entropy.bin -g@android:wpa_wlan0
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service dhcpcd_wlan0 /system/bin/dhcpcd -aABKL
     class main
     disabled
     oneshot
@@ -859,29 +792,10 @@ service iprenew_wlan0 /system/bin/dhcpcd -n
     disabled
     oneshot
 
-service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
-    class main
-    disabled
-    oneshot
-
-service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
-    class main
-    disabled
-    oneshot
-
-service iprenew_bnep0 /system/bin/dhcpcd -n
-    class main
-    disabled
-    oneshot
-
 service hostapd_bin /system/bin/hostapd -d /data/misc/wifi/hostapd.conf
+    class main
+    group system wifi inet
     socket wpa_wlan1 dgram 660 wifi wifi
-    class main
-    disabled
-    oneshot
-
-service wlan_precheck /system/bin/wlan-precheck
-    class main
     disabled
     oneshot
 
@@ -895,6 +809,12 @@ service iprenew_p2p /system/bin/dhcpcd -n
     disabled
     oneshot
 
+service uim /system/bin/uim-sysfs
+    class core
+    user root
+    group media bluetooth
+    oneshot
+
 service iprenew_bt-pan /system/bin/dhcpcd -n
     class main
     disabled
@@ -904,28 +824,6 @@ service dhcpcd_bt-pan /system/bin/dhcpcd -ABKL
     class main
     disabled
     oneshot
-
-service create_nvs /system/bin/calibrator calibrate
-    class main
-    disabled
-    oneshot
-
-service plt_drv_start /system/bin/calibrator plt plt_drv_start
-    disabled
-    oneshot
-   
-service plt_drv_stop /system/bin/calibrator plt plt_drv_stop
-    disabled
-    oneshot
-     
-service run_plt_server /system/bin/calibrator plt plt_server
-    disabled
-    oneshot
-
-service ap_at_command /system/bin/ap_at_command
-    class main
-    user root
-    group system input graphics media_rw sdcard_rw
 
 service glgps /system/bin/glgps -c /system/etc/gps_brcm_conf.xml
     class main
@@ -943,11 +841,6 @@ service charger /charger
     user root
     group root
     oneshot
-
-service uim /system/bin/uim-sysfs
-    class core
-    user bluetooth
-    group bluetooth net_bt_admin
 
 service ril-daemon /system/bin/rild
    class main

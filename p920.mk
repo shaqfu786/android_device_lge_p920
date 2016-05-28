@@ -57,14 +57,32 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/wifimac/wlan-precheck:system/bin/wlan-precheck \
     $(LOCAL_PATH)/wifimac/wifical.sh:system/bin/wifical.sh \
     $(LOCAL_PATH)/configs/RFMD_S_3.5.ini:system/etc/wifi/RFMD_S_3.5.ini \
+    $(LOCAL_PATH)/configs/tiwlan.ini:system/etc/wifi/tiwlan.ini \
+    $(LOCAL_PATH)/configs/tiwlan_ap.ini:system/etc/wifi/tiwlan_ap.ini \
+    $(LOCAL_PATH)/configs/tiwlan_ota.ini:system/etc/wifi/tiwlan_ota.ini \
     $(LOCAL_PATH)/configs/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf \
     $(LOCAL_PATH)/configs/hostapd.conf:system/etc/wifi/softap/hostapd.conf \
     $(LOCAL_PATH)/configs/hostapd.conf:system/etc/wifi/hostapd.conf \
+    $(LOCAL_PATH)/configs/p2p_supplicant.conf:system/etc/wifi/p2p_supplicant.conf
+
+PRODUCT_PACKAGES += \
+    lib_driver_cmd_wl12xx \
+    libhostapdcli \
+    libwpa_client \
+    calibrator \
+    crda \
+    dhcpcd.conf \
+    hostapd \
+    wifimac \
+    regulatory.bin \
+    wpa_supplicant
+
+# Touch
+PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/touch_dev.idc:system/usr/idc/touch_dev.idc \
-    $(LOCAL_PATH)/configs/p2p_supplicant.conf:system/etc/wifi/p2p_supplicant.conf \
     $(LOCAL_PATH)/configs/touch_dev.kl:system/usr/keylayout/touch_dev.kl
 
-# stagefright confs
+# Stagefright confs
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/media_profiles.xml:system/etc/media_profiles.xml \
     $(LOCAL_PATH)/configs/media_codecs.xml:system/etc/media_codecs.xml \
@@ -83,7 +101,6 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
     frameworks/native/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
     frameworks/native/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
-    frameworks/native/data/etc/android.hardware.wifi.direct.xml:system/etc/permissions/android.hardware.wifi.direct.xml \
     frameworks/native/data/etc/android.hardware.sensor.accelerometer.xml:system/etc/permissions/android.hardware.sensor.accelerometer.xml \
     frameworks/native/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
     frameworks/native/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
@@ -100,10 +117,6 @@ PRODUCT_COPY_FILES += \
 # GPS
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/gps_brcm_conf.xml:system/etc/gps_brcm_conf.xml 
-
-# Camera
-#PRODUCT_COPY_FILES += \
-#    $(LOCAL_PATH)/prebuilt/libcameraservice.so:system/lib/libcameraservice.so
 
 $(call inherit-product, build/target/product/full.mk)
 
@@ -125,7 +138,12 @@ PRODUCT_PACKAGES += \
     audio.usb.default \
     audio.a2dp.default \
     audio.r_submix.default \
-    audio_policy.default
+    audio_policy.default \
+    libaudiohw_legacy \
+    tinyplay \
+    tinycap \
+    tinymix \
+    tinypcminfo
 
 # HALs
 PRODUCT_PACKAGES += \
@@ -154,6 +172,7 @@ PRODUCT_PACKAGES += \
 # TI OMAP4
 PRODUCT_PACKAGES += \
     libion_ti \
+    libedid \
     smc_pa_ctrl \
     tf_daemon \
     libtf_crypto_sst \
@@ -163,7 +182,7 @@ PRODUCT_PACKAGES += \
     libmm_osal \
     gralloc.omap4.so
 
-#
+# Other
 PRODUCT_PACKAGES += \
     libipcutils \
     libipc \
@@ -202,16 +221,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     libion.so
 
+# Skia
 PRODUCT_PACKAGES += \
     libskiahwdec \
     libskiahwenc
-
-# To set the Wifi MAC address from NV, and the softap stuff
-PRODUCT_PACKAGES += \
-    calibrator \
-    hostapd \
-    libhostapdcli \
-    wifimac
 
 # Charger mode
 PRODUCT_PACKAGES += \
@@ -250,7 +263,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
     dalvik.vm.jit.codecachesize=0 \
     ro.config.low_ram=true \
     persist.sys.root_access=1 \
-    camera2.portability.force_api=1 \
     media.aac_51_output_enabled=true \
     hwui.render_dirty_regions=false 
 
@@ -285,8 +297,11 @@ PRODUCT_MODEL := LG-P920
 PRODUCT_MANUFACTURER := LGE
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
+# vendor blobs
 $(call inherit-product-if-exists, vendor/lge/p920/p920-vendor.mk)
+# gps
 $(call inherit-product, device/common/gps/gps_eu.mk)
-#$(call inherit-product, hardware/ti/omap4xxx/omap4.mk)
+# bluetooth/fm-radio
 $(call inherit-product-if-exists, hardware/ti/wpan/ti-wpan-products.mk)
+# memory
 $(call inherit-product, frameworks/native/build/phone-hdpi-512-dalvik-heap.mk)
