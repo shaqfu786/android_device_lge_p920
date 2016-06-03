@@ -141,11 +141,11 @@ on post-fs-data
     start fixmac 
 
     # for HDCP
-    # mkdir /data/mhl 0770 radio radio
-    # chown radio radio /data/mhl
-    # chmod 0775 /data/mhl/hdcp_on
+    mkdir /data/mhl 0770 radio radio
+    chown radio radio /data/mhl
+    chmod 0775 /data/mhl/hdcp_on
     # add symlink for HDCP key
-    # symlink /data/en_hdcp.bin /system/vendor/firmware/hdcp.keys
+    symlink /data/en_hdcp.bin /system/vendor/firmware/hdcp.keys
 
     # we will remap this as /mnt/sdcard with the sdcard fuse tool
     #mkdir /data/media 0775 media_rw media_rw
