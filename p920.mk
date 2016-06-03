@@ -120,9 +120,13 @@ PRODUCT_PACKAGES += \
     tiap_cu \
     libnetcmdiface
 
+# RIL symbols
+PRODUCT_PACKAGES += \
+    libril_shim \
+    lge-ril-shim
+
 # Audio
 PRODUCT_PACKAGES += \
-    libasound \
     libaudioutils \
     libaudiohw_legacy \
     audio.usb.default \
