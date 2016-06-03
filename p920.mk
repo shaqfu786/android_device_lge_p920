@@ -29,46 +29,67 @@ DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/recovery/postrecoveryboot.sh:recovery/root/sbin/postrecoveryboot.sh
 
-
 # Boot animation 
 TARGET_SCREEN_HEIGHT := 720
 TARGET_SCREEN_WIDTH := 480
 
 # Scripts and confs
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/prebuilt/66swap:system/etc/init.d/66swap \
     $(LOCAL_PATH)/prebuilt/setup-recovery:system/bin/setup-recovery \
+    $(LOCAL_PATH)/prebuilt/66swap:system/etc/init.d/66swap \
     $(LOCAL_PATH)/prebuilt/enable-tiwlink:system/bin/enable-tiwlink \
     $(LOCAL_PATH)/prebuilt/lgcpversion:system/bin/lgcpversion \
-    $(LOCAL_PATH)/prebuilt/TIInit_7.2.31.bts:system/etc/firmware/TIInit_7.2.31.bts
+    $(LOCAL_PATH)/prebuilt/TIInit_7.2.31.bts:system/etc/firmware/TIInit_7.2.31.bts 
 
 
 # Init Scripts
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/root/init.p920.rc:root/init.p920.rc \
+    $(LOCAL_PATH)/root/init.cosmo.rc:root/init.cosmo.rc \
     $(LOCAL_PATH)/root/init.lgep920board.rc:root/init.lgep920board.rc \
+    $(LOCAL_PATH)/root/init.lge.ril.rc:root/init.lge.ril.rc \
     $(LOCAL_PATH)/root/init.lgep920board.usb.rc:root/init.lgep920board.usb.rc \
     $(LOCAL_PATH)/root/ueventd.lgep920board.rc:root/ueventd.lgep920board.rc \
-    $(LOCAL_PATH)/root/fstab.lgep920board:root/fstab.lgep920board 
+    $(LOCAL_PATH)/root/fstab.lgep920board:root/fstab.lgep920board \
+    $(LOCAL_PATH)/root/twrp.fstab:recovery/root/etc/twrp.fstab
 
 # Wifi
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/wifimac/wlan-precheck:system/bin/wlan-precheck \
     $(LOCAL_PATH)/wifimac/wifical.sh:system/bin/wifical.sh \
     $(LOCAL_PATH)/configs/RFMD_S_3.5.ini:system/etc/wifi/RFMD_S_3.5.ini \
+    $(LOCAL_PATH)/configs/tiwlan.ini:system/etc/wifi/tiwlan.ini \
+    $(LOCAL_PATH)/configs/tiwlan_ap.ini:system/etc/wifi/tiwlan_ap.ini \
+    $(LOCAL_PATH)/configs/tiwlan_ota.ini:system/etc/wifi/tiwlan_ota.ini \
     $(LOCAL_PATH)/configs/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf \
     $(LOCAL_PATH)/configs/hostapd.conf:system/etc/wifi/softap/hostapd.conf \
     $(LOCAL_PATH)/configs/hostapd.conf:system/etc/wifi/hostapd.conf \
+    $(LOCAL_PATH)/configs/p2p_supplicant.conf:system/etc/wifi/p2p_supplicant.conf
+
+PRODUCT_PACKAGES += \
+    lib_driver_cmd_wl12xx \
+    libhostapdcli \
+    libwpa_client \
+    calibrator \
+    crda \
+    dhcpcd.conf \
+    hostapd \
+    wifimac \
+    regulatory.bin \
+    wpa_supplicant
+
+# Touch
+PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/touch_dev.idc:system/usr/idc/touch_dev.idc \
-    $(LOCAL_PATH)/configs/p2p_supplicant.conf:system/etc/wifi/p2p_supplicant.conf \
-    $(LOCAL_PATH)/configs/wpa_supplicant_overlay.conf:system/etc/wifi/wpa_supplicant_overlay.conf \
     $(LOCAL_PATH)/configs/touch_dev.kl:system/usr/keylayout/touch_dev.kl
 
-# stagefright confs
+# Stagefright confs
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/media_profiles.xml:system/etc/media_profiles.xml \
     $(LOCAL_PATH)/configs/media_codecs.xml:system/etc/media_codecs.xml \
-    $(LOCAL_PATH)/configs/audio_policy.conf:system/etc/audio_policy.conf
+    $(LOCAL_PATH)/configs/audio_policy.conf:system/etc/audio_policy.conf \
+    frameworks/av/media/libstagefright/data/media_codecs_google_audio.xml:system/etc/media_codecs_google_audio.xml \
+    frameworks/av/media/libstagefright/data/media_codecs_google_telephony.xml:system/etc/media_codecs_google_telephony.xml \
+    frameworks/av/media/libstagefright/data/media_codecs_google_video.xml:system/etc/media_codecs_google_video.xml 
 
 # RIL stuffs
 PRODUCT_COPY_FILES += \
@@ -99,13 +120,7 @@ PRODUCT_COPY_FILES += \
       
 # GPS
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/configs/gps_brcm_conf.xml:system/etc/gps_brcm_conf.xml \
-    $(LOCAL_PATH)/configs/gps.conf:system/etc/gps.conf \
-    $(LOCAL_PATH)/configs/SuplRootCert:system/etc/SuplRootCert 
-
-# Camera
-#PRODUCT_COPY_FILES += \
-#    $(LOCAL_PATH)/prebuilt/libcameraservice.so:system/lib/libcameraservice.so
+    $(LOCAL_PATH)/configs/gps_brcm_conf.xml:system/etc/gps_brcm_conf.xml 
 
 $(call inherit-product, build/target/product/full.mk)
 
@@ -150,7 +165,7 @@ PRODUCT_PACKAGES += \
     hciconfig \
     hcitool
 
-# OMAP4 OMX
+# TI OMAP4
 PRODUCT_PACKAGES += \
     libmm_osal \
     gralloc.omap4.so
@@ -190,28 +205,15 @@ PRODUCT_PACKAGES += \
     make_ext4fs \
     setup_fs
 
+# Skia
 PRODUCT_PACKAGES += \
     libskiahwdec \
     libskiahwenc
 
+# IPv6 tethering
 PRODUCT_PACKAGES += \
-    libstagefrighthw
-
-# To set the Wifi MAC address from NV, and the softap stuff
-PRODUCT_PACKAGES += \
-    lib_driver_cmd_wl12xx \
-    calibrator \
-    hostapd \
-    wpa_supplicant \
-    libwpa_client \
-    dhcpcd.conf \
-    libhostapdcli \
-    wifimac
-
-#RIL
-PRODUCT_PROPERTY_OVERRIDES += \
-    rild.libpath=/system/lib/lge-ril.so \
-    ro.telephony.ril_class=LGEInfineon
+    ebtables \
+    ethertypes
 
 # Charger mode
 PRODUCT_PACKAGES += \
@@ -240,9 +242,6 @@ PRODUCT_PACKAGES += \
 # Still need to set english for audio init
 PRODUCT_LOCALES += en_US
 
-# sw vsync setting
-#PRODUCT_PROPERTY_OVERRIDES += \
-#    persist.hwc.sw_vsync=1
 
 # General
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -255,8 +254,8 @@ PRODUCT_PROPERTY_OVERRIDES += \
     persist.sys.root_access=1 \
     camera2.portability.force_api=1 \
     media.aac_51_output_enabled=true \
-    hwui.render_dirty_regions=false \
-    force_hw_ui=true
+    hwui.render_dirty_regions=false 
+
 
 # Vold
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -288,8 +287,11 @@ PRODUCT_MODEL := LG-P920
 PRODUCT_MANUFACTURER := LGE
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
+# vendor blobs
 $(call inherit-product-if-exists, vendor/lge/p920/p920-vendor.mk)
+# gps
 $(call inherit-product, device/common/gps/gps_eu.mk)
-#$(call inherit-product-if-exists, device/lge/p920/s3d/s3d-products.mk)
+# bluetooth/fm-radio
 $(call inherit-product-if-exists, hardware/ti/wpan/ti-wpan-products.mk)
+# memory
 $(call inherit-product, frameworks/native/build/phone-hdpi-512-dalvik-heap.mk)
