@@ -1,2 +1,4 @@
 # ducati
 type firmware_ducati, file_type;
+
+allow init netd:unix_stream_socket connectto;

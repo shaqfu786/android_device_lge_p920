@@ -1,0 +1,2 @@
+allow system_app gps_data_file:dir { write remove_name add_name };
+allow system_app gps_data_file:file { getattr unlink };

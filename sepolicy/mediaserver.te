@@ -1,0 +1,7 @@
+# mediaserver
+
+allow mediaserver system_server:unix_stream_socket { read write };
+allow mediaserver device:dir { read open };
+allow mediaserver sensorservice_service:service_manager find;
+#allow mediaserver mediaserver_tmpfs:file execute;
+

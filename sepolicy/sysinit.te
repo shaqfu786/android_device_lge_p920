@@ -1,0 +1,2 @@
+allow sysinit kernel:system module_request;
+allow sysinit sysfs_lowmemorykiller:file { read write open };

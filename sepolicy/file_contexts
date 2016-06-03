@@ -1,15 +1,27 @@
+# Sensors
+/data/misc/sens/fifo_dat                                        u:object_r:sensors_device:s0
+/data/misc/sens/fifo_cmd                                        u:object_r:sensors_device:s0
+/data/misc/sens/profile_calib_a                                 u:object_r:sensors_device:s0
+/data/misc/sens/profile_calib_m                                 u:object_r:sensors_device:s0
+
+# radio
+/data/misc/wifi/macAddress                                      u:object_r:radio_data_file:s0
+/dev/xmd-.*                                                     u:object_r:radio_device:s0
+/dev/xmd-tty6                                                   u:object_r:gps_device:s0
+
 # Vibrator
-/dev/tspdrv                      u:object_r:input_device:s0
+/dev/tspdrv                                                     u:object_r:input_device:s0
 
-# for wpa_supp
-/dev/rfkill                      u:object_r:rfkill_device:s0
-
-#The devices and files used by the hciattach service are device specific
-/dev/ttyO1                       u:object_r:hci_attach_dev:s0
-
-# ttyO0 is for uart driver. gps_device is device specific
-/dev/ttyO0                       u:object_r:gps_device:s0
+# Hardware tunables
+/sys/devices/omapdss/display0/gamma_tuning                      u:object_r:sysfs_writable:s0
+/sys/devices/platform/tspdrv/nforce_timed                       u:object_r:sysfs_writable:s0
+/sys/devices/omapdss/display0/nature         	                u:object_r:sysfs_writable:s0
 
 # Firmwares
-/system/vendor/firmware/ducati-m3.bin u:object_r:firmware_ducati:s0
-/system/etc/firmware/ti-connectivity/wl1271-nvs.bin u:object_r:radio_data_file:s0
+/system/etc/firmware/ducati-m3\.bin                             u:object_r:firmware_ducati:s0
+
+# Bluetooth
+/dev/ttyO1                                  u:object_r:hci_attach_dev:s0
+/sys/class/rfkill/rfkill0/state           -- u:object_r:sysfs_bluetooth_writable:s0
+/sys/class/rfkill/rfkill0/type            -- u:object_r:sysfs_bluetooth_writable:s0
+/dev/rfkill                      u:object_r:rfkill_device:s0
