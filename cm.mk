@@ -37,4 +37,4 @@ PRODUCT_DEVICE := p920
 # Enable Torch
 PRODUCT_PACKAGES += Torch
 
-PRODUCT_BUILD_PROP_OVERRIDES += PRODUCT_NAME=cosmopolitan BUILD_ID=GRJ90 BUILD_FINGERPRINT="lge/cosmopolitan/cosmo_EUR-XXX:2.3.5/GRJ90/LGP920-V21a.19defbe655:user/release-keys" PRIVATE_BUILD_DESC="cosmopolitan-user 2.3.5 GRJ90 LGP920-V21a-NOV-15-2011.423ad6cf release-keys"
+PRODUCT_BUILD_PROP_OVERRIDES += PRODUCT_NAME=cosmopolitan BUILD_ID=ICS BUILD_FINGERPRINT="lge/cosmo_open_eu/cosmopolitan:4.0.4/ICS/P92028b-EUR-XX.4DAAD908:user/release-keys" PRIVATE_BUILD_DESC="cosmo_open_eu-user 4.0.4 ICS P92028b-EUR-XX.4DAAD908 release-keys"
