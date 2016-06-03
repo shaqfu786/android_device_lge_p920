@@ -128,11 +128,13 @@ PRODUCT_PACKAGES += \
 # Audio
 PRODUCT_PACKAGES += \
     libaudioutils \
-    libaudiohw_legacy \
+    audio.primary.p920 \
+    audio.hdmi.p920 \
     audio.usb.default \
     audio.a2dp.default \
     audio.r_submix.default \
-    audio_policy.p920 \
+    audio_policy.default \
+    libaudiohw_legacy \
     tinyplay \
     tinycap \
     tinymix \
@@ -140,9 +142,6 @@ PRODUCT_PACKAGES += \
 
 # HALs
 PRODUCT_PACKAGES += \
-    audio.primary.p920 \
-    audio.hdmi.p920 \
-    hwcomposer.omap4\
     camera.omap4 \
     lights.p920 
     
