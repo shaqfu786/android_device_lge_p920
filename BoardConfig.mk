@@ -21,9 +21,9 @@
 
 COMMON_FOLDER := device/lge/p920
 
--include vendor/lge/p920/BoardConfigVendor.mk
-
 -include hardware/ti/omap4/BoardConfigCommon.mk
+
+-include vendor/lge/p920/BoardConfigVendor.mk
 
 # Headers
 TARGET_SPECIFIC_HEADER_PATH := $(COMMON_FOLDER)/include
@@ -33,29 +33,26 @@ PRODUCT_VENDOR_KERNEL_HEADERS := $(COMMON_FOLDER)/kernel-headers
 TARGET_NO_BOOTLOADER := true
 TARGET_BOARD_OMAP_CPU := 4430
 TARGET_BOOTLOADER_BOARD_NAME := p920
-TARGET_ARCH_VARIANT := armv7-a-neon
 TARGET_ARCH_VARIANT_CPU := $(TARGET_CPU_VARIANT)
 TARGET_ARCH_VARIANT_FPU := neon
 ARCH_ARM_HAVE_TLS_REGISTER := true
-TARGET_ARCH_LOWMEM := true
 NEEDS_ARM_ERRATA_754319_754320 := true
 BOARD_GLOBAL_CFLAGS += -DNEEDS_ARM_ERRATA_754319_754320
-TARGET_BOARD_INFO_FILE := $(COMMON_FOLDER)/board-info.txt
+TARGET_ARCH_LOWMEM := true
 
 # Boot
-BOARD_USES_UBOOT_MULTIIMAGE := true
-BOARD_UBOOT_ENTRY := 0x80008000
-BOARD_UBOOT_LOAD := 0x80008000
-#BOARD_KERNEL_BASE := 0x80000000
-#BOARD_KERNEL_PAGESIZE := 2048
+#BOARD_USES_UBOOT_MULTIIMAGE := true
+#BOARD_UBOOT_ENTRY := 0x80008000
+#BOARD_UBOOT_LOAD := 0x80008000
+BOARD_KERNEL_BASE := 0x80000000
+BOARD_KERNEL_PAGESIZE := 2048
 BOARD_KERNEL_CMDLINE := androidboot.selinux=permissive 
-
 
 # Kernel
 TARGET_KERNEL_CONFIG := cyanogenmod_p920_defconfig
 TARGET_KERNEL_SOURCE := kernel/lge/omap4-common
 
-
+# WiFi Modules
 KERNEL_WL12XX_MODULES:
 	make clean -C hardware/ti/wlan/mac80211/compat_wl12xx
 	make -j8 -C hardware/ti/wlan/mac80211/compat_wl12xx KERNEL_DIR=$(KERNEL_OUT) KLIB=$(KERNEL_OUT) KLIB_BUILD=$(KERNEL_OUT) ARCH=arm CROSS_COMPILE="arm-eabi-"
@@ -76,9 +73,9 @@ TARGET_KERNEL_MODULES += KERNEL_WL12XX_MODULES
 
 # External SGX Module
 SGX_MODULES:
-	make clean -C hardware/ti/omap4/pvr-source/eurasiacon/build/linux2/omap4430_android
+	make clean -C $(HARDWARE_TI_OMAP4_BASE)/pvr-source/eurasiacon/build/linux2/omap4430_android
 	cp $(TARGET_KERNEL_SOURCE)/drivers/video/omap2/omapfb/omapfb.h $(KERNEL_OUT)/drivers/video/omap2/omapfb/omapfb.h
-	make -j8 -C hardware/ti/omap4/pvr-source/eurasiacon/build/linux2/omap4430_android ARCH=arm KERNEL_CROSS_COMPILE=arm-eabi- CROSS_COMPILE=arm-eabi- KERNELDIR=$(KERNEL_OUT) TARGET_PRODUCT="blaze_tablet" BUILD=release TARGET_SGX=540 PLATFORM_VERSION=4.0
+	make -j8 -C $(HARDWARE_TI_OMAP4_BASE)/pvr-source/eurasiacon/build/linux2/omap4430_android ARCH=arm KERNEL_CROSS_COMPILE=arm-eabi- CROSS_COMPILE=arm-eabi- KERNELDIR=$(KERNEL_OUT) TARGET_PRODUCT="blaze_tablet" BUILD=release TARGET_SGX=540
 	mv $(KERNEL_OUT)/../../target/kbuild/pvrsrvkm_sgx540_120.ko $(KERNEL_MODULES_OUT)
 	$(ARM_EABI_TOOLCHAIN)/arm-eabi-strip --strip-unneeded $(KERNEL_MODULES_OUT)/pvrsrvkm_sgx540_120.ko
 
@@ -88,15 +85,13 @@ TARGET_KERNEL_MODULES += SGX_MODULES
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_TI := true
 BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := $(COMMON_FOLDER)/bluetooth
-BOARD_NEEDS_CUTILS_LOG := true
+#BOARD_NEEDS_CUTILS_LOG := true
 
 # Egl
-USE_OPENGL_RENDERER := true
+#USE_OPENGL_RENDERER := true
 BOARD_EGL_CFG := $(COMMON_FOLDER)/prebuilt/egl.cfg
-BOARD_EGL_WORKAROUND_BUG_10194508 := true
 TARGET_RUNNING_WITHOUT_SYNC_FRAMEWORK := true
 TARGET_USES_OPENGLES_FOR_SCREEN_CAPTURE := true
-TARGET_HAS_WAITFORVSYNC := true
 
 # Wifi
 USES_TI_MAC80211 := true
@@ -117,7 +112,6 @@ WIFI_BAND := 802_11_ABGN
 PRODUCT_PROPERTY_OVERRIDES := \
        wifi.interface=wlan0
 	   
-	   
 # Filesystem
 TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_SYSTEMIMAGE_PARTITION_SIZE := 619249664
@@ -131,47 +125,74 @@ BOARD_HAS_NO_MISC_PARTITION := true
 
 # Camera
 USE_CAMERA_STUB := false
+COMMON_GLOBAL_CFLAGS += -DQCOM_LEGACY_UIDS
+TI_CAMERAHAL_USES_LEGACY_DOMX_DCC := true
+TI_CAMERAHAL_MAX_CAMERAS_SUPPORTED := 3
+TI_CAMERAHAL_DEBUG_ENABLED := true
 
+# QCOM SELinux policy
+include device/qcom/sepolicy/sepolicy.mk
 
 BOARD_RIL_CLASS := ../../../device/lge/p920/ril/
 BOARD_HAS_VIBRATOR_IMPLEMENTATION := ../../device/lge/p920/vibrator.c
 
-BOARD_ALLOW_SUSPEND_IN_CHARGER := true
+BOARD_CHARGER_ENABLE_SUSPEND := true
 
 # Hardware
 BOARD_HARDWARE_CLASS := $(COMMON_FOLDER)/cmhw
 
-BOARD_HAL_STATIC_LIBRARIES := libhealthd.p920
+# HWComposer
+BOARD_USE_SYSFS_VSYNC_NOTIFICATION := true
 
-# Recovery
+# Enable Minikin text layout engine (will be the default soon)
+USE_MINIKIN := true
+
+# Needed for RIL
+TARGET_NEEDS_BIONIC_MD5 := true
+COMMON_GLOBAL_CFLAGS += -DDISABLE_ASHMEM_TRACKING
+
+# We don't support cursor layers, which when attempting to use them,
+# results in no cursors (mouse or otherwise) displayed on the screen.
+TARGET_DISABLE_CURSOR_LAYER := true
+
+BOARD_HAL_STATIC_LIBRARIES := libhealthd.p920
+TARGET_TI_HWC_HDMI_DISABLED := true
+BOARD_USE_CUSTOM_LIBION := true
+
+# Recovery 
+HAVE_SELINUX := true
 BOARD_RECOVERY_ALWAYS_WIPES := true
 TARGET_RECOVERY_PRE_COMMAND := "echo 1 > /data/.recovery_mode; sync; \#"
 BOARD_HAS_SDCARD_INTERNAL := true
 TARGET_RECOVERY_FSTAB = $(COMMON_FOLDER)/root/fstab.lgep920board
-RECOVERY_FSTAB_VERSION = 2 
-DEVICE_RESOLUTION := 480x800
-BOARD_CUSTOM_BOOTIMG_MK := device/lge/p920/uboot-bootimg.mk
-BOARD_HAS_NO_SELECT_BUTTON := true
-TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
 BOARD_RECOVERY_SWIPE := true
 BOARD_UMS_LUNFILE := "/sys/devices/virtual/android_usb/android0/f_mass_storage/lun%d/file"
-BACKLIGHT_PATH := /sys/devices/platform/omap/omap_i2c.2/i2c-2/2-0036/brightness
+RECOVERY_GRAPHICS_FORCE_USE_LINELENGTH := true
 
- 
-# Audio
+# TWRP
+TWHAVE_SELINUX := true
+TW_THEME := portrait_hdpi
+TW_INCLUDE_CRYPTO := true
+TW_INCLUDE_FB2PNG := true
+TW_FLASH_FROM_STORAGE := true 
+TW_INTERNAL_STORAGE_PATH := "/sdcard"
+TW_INTERNAL_STORAGE_MOUNT_POINT := "sdcard"
+TW_EXTERNAL_STORAGE_PATH := "/external_sd"
+TW_EXTERNAL_STORAGE_MOUNT_POINT := "external_sd"
+TW_NO_REBOOT_BOOTLOADER := true
+TW_NO_CPU_TEMP := true
+TW_MAX_BRIGHTNESS := 254
+TW_BRIGHTNESS_PATH := /sys/devices/platform/omap/omap_i2c.2/i2c-2/2-0036/brightness
+TWRP_INCLUDE_LOGCAT := true
+
+ # Audio
 BOARD_USES_GENERIC_AUDIO := false
-BOARD_USES_ALSA_AUDIO := true
-BUILD_WITH_ALSA_UTILS := true
-TARGET_PROVIDES_LIBAUDIO := true
 HAVE_PRE_KITKAT_AUDIO_BLOB :=true
 COMMON_GLOBAL_CFLAGS += -DNEEDS_VECTORIMPL_SYMBOLS
 
 
 # Fm-Radio
 TARGET_PROVIDES_TI_FM_SERVICE := true
-
-# Selinux
-BOARD_USES_SECURE_SERVICES := true
 
 # Sepolicy
 BOARD_SEPOLICY_DIRS += \
